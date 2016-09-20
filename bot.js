@@ -4,7 +4,7 @@ const Discord = require('discord.js');
 
 //create instance of a Discord Client
 const bot = new Discord.Client();
-const token = 'MjI1MzQ1NjYxNTkwMDQ0Njcy.CrntFw.jHDKx9Mj2ExBa6twSz7lywTu2-o';
+const token = '';
 const prefix = 'fuzzy ';
 const botId = '225345661590044672';
 
@@ -23,19 +23,25 @@ const botId = '225345661590044672';
  ];
 
 bot.on('ready', () => {
-
-	console.log('I am ready!');
- });
+	console.log("Hello, world."); 
+});
 
 bot.on('message', message =>{
 	//scope variables////////////////
 	var msg = message.content;
-	var suffix = message.content.substring(message.content.indexOf(" ")+1);
 	var msgChannel = message.channel;
 	/////////////////////////////////
 
 	if(ignoreList.indexOf(message.author.id) != -1) return; //self-ignore: ignores any text bot says so it doesn't potentially respond to itself
 
+	/* .help
+	 */
+	 if(msg.startsWith(prefix+"help")){
+	 	let helpInfo = [
+	 	"```im gay```",
+	 	]
+	 	msgChannel.sendMessage(helpInfo);
+	 }
 	/* .ping
 	 * Checks to see if the bot if alive by replying 'pong'
 	 */
@@ -120,6 +126,20 @@ bot.on('message', message =>{
 		}
 	 }
 
+	/* .setnickname
+	 * Changes the nickname of the bot
+	 * Only useable by anyone set as ownerId (for obvious reasons)
+	 */
+	  if(msg.startsWith(prefix+"setnickname") && ownerId.indexOf(message.author.id) != -1){
+		try{
+			let str = prefix+"setnickname";
+			message.guild.member(bot.user).setNickname(msg.substring(str.length+1));
+		}
+		catch(err){
+			msgChannel.sendMessage("`"+err+"`");
+		}
+	  }
+
 	/* .setstatus
 	 * Changes the 'currently playing' status/game of the bot
 	 * Only useable by ownerId (for obvious reasons)
@@ -148,6 +168,36 @@ bot.on('message', message =>{
 			msgChannel.sendMessage("`"+err+"`");
 		}
 	 }
+
+	/* .ban
+     * Bans a single tagged user from server if message author has ban permissions
+     */
+     if(msg.startsWith(prefix+"ban")){
+     	let guildUser = message.guild.member(message.author); //creates a guild user of message author
+     	try{
+	     	if(guildUser.permissions.hasPermission("BAN_MEMBERS") && message.mentions.users.size === 1){
+	     		let reason = msg.substring(msg.indexOf("-reason")+8);
+	     		let user = message.guild.member(message.mentions.users.first());
+	     		user.ban();
+	     		if(reason.length != 0){
+	     			user.sendMessage("You were banned from **" + message.guild.name + "** for the following reason: \n" + "```"+reason+"```");
+	     		}
+	     		msgChannel.sendMessage("Banned <@" + user.id + ">");
+	     	}
+	     	else{
+	     		let usageInfo = [
+	     		"**kick**: Kicks the tagged user (limit 1 tag per command) from the server",
+	     		"`"+prefix+"kick @user [-reason ...]`",
+	     		"`-reason ...` (optional) : Messages the kicked user the reason why they were kicked",
+	     		"`Example) "+prefix+"kick @user -reason Verbal abuse`"
+	     		];
+	     		msgChannel.sendMessage(usageInfo);
+	     	}
+     	}
+     	catch(err){
+     		msgChannel.sendMessage("`"+err+"`");
+     	}
+     }
 
     /* .kick
      * Kicks a single tagged user from server if message author has kick permissions
@@ -178,6 +228,7 @@ bot.on('message', message =>{
      		msgChannel.sendMessage("`"+err+"`");
      	}
      }
+
 
 	/* .info
 	 * Pulls information about the tagged user and outputs it in channel or PM with the optional -pm tag.
@@ -250,6 +301,32 @@ bot.on('message', message =>{
 			"has imp ears",
 			"hnnnnggg",
 			"java >> python"
+		];
+		msgChannel.sendMessage("<@"+id+"> "+textArray[Math.floor(Math.random()*textArray.length)]);
+		return;
+	}
+
+	if(msg === 'hime') {
+		var id = "57872649673510912";
+		var textArray = [
+			"is a himedere",
+			"is a gremlin",
+			"is bae",
+			"is haramBAE #neverforget",
+			"is pretty cute..i suppose",
+			"hates <@133352797776248832> :frowning:",
+			"is negger",
+			"is pussywetflipflop",
+			"is a dorito chip",
+			"is currently sleeping with <@133352797776248832>",
+			"derp",
+			"is a hipster",
+			"is a dank meme",
+			"has imp ears",
+			"hnnnnggg",
+			"makes me wet",
+			"is the type of black girl that have short hair so the cum wont stick on her hair",
+			"is a himederp"
 		];
 		msgChannel.sendMessage("<@"+id+"> "+textArray[Math.floor(Math.random()*textArray.length)]);
 		return;
