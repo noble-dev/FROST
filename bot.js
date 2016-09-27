@@ -3,6 +3,9 @@ const Discord = require('discord.js');
 var fs = require('fs');
 var readline = require('readline');
 var lib = require('./lib/hello.js');
+var sys = require('util');
+var exec = require('child_process').exec;
+
 //create instance of a Discord Client
 const bot = new Discord.Client();
 const token = 'MjI1MzQ1NjYxNTkwMDQ0Njcy.CrntFw.jHDKx9Mj2ExBa6twSz7lywTu2-o';
@@ -69,6 +72,12 @@ bot.on('message', message =>{
 	if(message.author.bot) return; 
 	//self-ignore: ignores any text bot says so it doesn't potentially respond to itself BUT overrides if on owner list
 
+
+	if(msg === "test"){
+		exec("git add *");
+		exec('git commit -m "asdasd"');
+		exec('git push');
+	}
 	/* .ignore
 	 * Adds mentioned users to the ignore list. Bot will ignore commands originating from this user.
 	 * Must be owner for obvious reasons.
