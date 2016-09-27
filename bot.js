@@ -130,7 +130,7 @@ bot.on('message', message =>{
 	 		msgChannel.sendMessage(help[msg.substring((prefix+"help").length+1)]);
 	 	}
 	 	else{
-	 		msgChannel.sendMessage("say hi");
+	 		msgChannel.sendMessage("I didn't recognize that command");
 	 	}
 	 }
 
@@ -198,13 +198,7 @@ bot.on('message', message =>{
 	 * Only useable by anyone set as ownerId (for obvious reasons)
 	 */
 	 if(msg.startsWith(prefix+"setname") && ownerId.indexOf(message.author.id) != -1){
-		try{
-			let str = prefix+"setname";
-			bot.user.setUsername(msg.substring(str.length+1));
-		}
-		catch(err){
-			msgChannel.sendMessage("`"+err+"`");
-		}
+		bot.user.setUsername(msg.substring((prefix+"setname").length + 1));
 	 }
 
 	/* .setnickname
@@ -212,13 +206,7 @@ bot.on('message', message =>{
 	 * Only useable by anyone set as ownerId (for obvious reasons)
 	 */
 	  if(msg.startsWith(prefix+"setnickname") && ownerId.indexOf(message.author.id) != -1){
-		try{
-			let str = prefix+"setnickname";
-			message.guild.member(bot.user).setNickname(msg.substring(str.length+1));
-		}
-		catch(err){
-			msgChannel.sendMessage("`"+err+"`");
-		}
+		message.guild.member(bot.user).setNickname(msg.substring((prefix+"setnickname").length+1));
 	  }
 
 	/* .setstatus
@@ -226,13 +214,7 @@ bot.on('message', message =>{
 	 * Only useable by ownerId (for obvious reasons)
 	 */
 	 if(msg.startsWith(prefix+"setstatus") && ownerId.indexOf(message.author.id) != -1){
-	 	try{
-	 		let str = prefix+"setstatus";
-	 		bot.user.setStatus("online", msg.substring(str.length+1));
-	 	}
-	 	catch(err){
-	 		msgChannel.sendMessage("`"+err+"`");
-	 	}
+ 		bot.user.setStatus("online", msg.substring((prefix+"setstatus").length+1));
 	 }
 
 	/* .try
