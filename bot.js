@@ -1,29 +1,76 @@
 //help
 //import the discord.js module
 const Discord = require('discord.js');
-
+var fs = require('fs');
+var readline = require('readline');
+var lib = require('./lib/hello.js');
 //create instance of a Discord Client
+const version = '0.1 ALPHA'
 const bot = new Discord.Client();
-const token = '';
-const prefix = 'fuzzy ';
+const token = 'MjI1MzQ1NjYxNTkwMDQ0Njcy.CrntFw.jHDKx9Mj2ExBa6twSz7lywTu2-o';
+const prefix = 'frost ';
 const botId = '225345661590044672';
 
 /* list of owners that can invoke owner-only commands
  */
- const ownerId = [
- 	"133352797776248832", //andrew
- 	"134090963395149824" //fuzzy
- ];
+ var ownerId = [];
 
 /* list of people to ignore (usually other bots)
  */
- const ignoreList = [
+ var ignoreList = [];
+ 
+ /*[
  	"168850640972283905", //flora bot
  	"225345661590044672"  //itself
- ];
+ ];*/
+ 
+
+//dictionary of help/usage info
+const help = {
+	"delete" : ["`"+prefix+"delete ...`",
+				"Deletes messages that meet the specified criteria. User must have permissions.\n",
+				"**Available parameters:**",
+				"`"+prefix+"delete @user(s)` \n     Deletes all messages from the tagged users",
+				"`"+prefix+"delete contains <text>` \n     Deletes all messages containing the text",
+				"`"+prefix+"delete <number>` \n     Deletes specified number of messages"
+				],
+	"info"   :  ["`"+prefix+"info @user [-pm] [-hide]`",
+				 "Gets the tagged user's profile information.\n",
+				 "**Parameters:**",
+				 "`@user`\n     (Required) The user to lookup",
+				 "`-pm`\n     (Optional) Messages the user info in a private message",
+				 "`-hide`\n     (Optional) Deletes the message that invoked this command."
+				],
+	"kick"   :  ["`"+prefix+"kick @user [--reason]`",
+				 "Kicks the mentioned user from the discord server.\n",
+				 "**Parameters:**",
+				 "`@user`\n     (Required) The user to kick",
+				 "`--reason`\n     (Optional) Once kicked, the user is messaged the specified reason\n     example usage: `"+prefix+"kick @user --Verbal Abuse`"
+			    ],
+	"ban"    :  ["`"+prefix+"ban @user [--reason]`",
+				 "Bans the mentioned user from the discord server.\n",
+				 "**Parameters:**",
+				 "`@user`\n     (Required) The user to ban",
+				 "`--reason`\n     (Optional) Once banned, the user is messaged the specified reason\n     example usage: `"+prefix+"ban @user --Verbal Abuse`"
+			    ]
+};
 
 bot.on('ready', () => {
-	console.log("Hello, world."); 
+	console.log("Hello, world.");
+	fs.readFile('./etc/ignoreList.txt', function(err, data){
+	 	if(err) throw err;
+	 	ignoreList = data.toString().split('\n');
+	 	console.log("Loaded ignore list.");
+ 	});
+ 	fs.readFile('./etc/ownerlist.txt', function(err, data){
+	 	if(err) throw err;
+	 	ownerId = data.toString().split('\n');
+	 	console.log("Loaded owners list.");
+ 	});
+});
+
+bot.on('guildMemberAdd', (guild, member) => {
+  //console.log(member + " joined " + guild.name);
 });
 
 bot.on('message', message =>{
@@ -31,17 +78,75 @@ bot.on('message', message =>{
 	var msg = message.content;
 	var msgChannel = message.channel;
 	/////////////////////////////////
+	if(!(ownerId.indexOf(message.author.id) != -1) && ignoreList.indexOf(message.author.id) != -1) return;
+	if(message.author.bot) return; 
+	//self-ignore: ignores any text bot says so it doesn't potentially respond to itself BUT overrides if on owner list
 
-	if(ignoreList.indexOf(message.author.id) != -1) return; //self-ignore: ignores any text bot says so it doesn't potentially respond to itself
+	/* .ignore
+	 * Adds mentioned users to the ignore list. Bot will ignore commands originating from this user.
+	 * Must be owner for obvious reasons.
+	 */
+	 if(msg.startsWith(prefix+"ignore") && message.mentions.users.size > 0 && ownerId.indexOf(message.author.id) != -1){
+		let ignoredUsers = [];
+		message.mentions.users.forEach(function(entry){
+			if(ignoreList.indexOf(entry.id) != -1){ msgChannel.sendMessage("`"+entry.username + " is already being ignored! Not added.`");}
+			else{
+			fs.appendFile('./etc/ignoreList.txt', "\n"+entry.id, function(err){
+				if(err) throw err;
+				console.log("Added " + entry.id + " to the ignore list");
+			})
+			ignoreList.push(entry.id);
+			ignoredUsers.push("`Now ignoring " + entry.username + "`");
+			}
+		});
+		msgChannel.sendMessage(ignoredUsers);
+	 }
+
+	/* .unignore
+	 * removes person from ignore list
+	 */
+	 if(msg.startsWith(prefix+"unignore") && message.mentions.users.size > 0 && ownerId.indexOf(message.author.id) != -1){
+	 	
+	 }
+
+	/* .about
+	 *
+	 */
+	 if(msg.startsWith(prefix+"about")){
+	 	let time = process.uptime();
+		let hours = Math.floor(time/3600);
+		time = time - hours*3600;
+		let minutes = Math.floor(time/60);
+		let seconds = Math.floor(time - minutes * 60);
+	 	msgChannel.sendMessage([
+	 		"```java",
+	 		"FROST Bot. Created by dev#4317",
+	 		"",
+	 		"Currently, I am being developed and worked on during spare time, so I may be limited in features. If you have any feature requests or bugs, please join my server.",
+	 		"",
+	 		"Uptime: " +hours + " hr, " + minutes + " min, " + seconds + " sec",
+	 		"Servers: " + bot.guilds.size,
+	 		"",
+	 		"FROST Bot Server: <https://discord.gg/b8trXJv>",
+	 		"",
+	 		"Invite this bot to your server: ",
+	 		"https://discordapp.com/oauth2/authorize?&client_id=225345661590044672&scope=bot&permissions=0",
+	 		"```"
+	 		]);
+	 }
 
 	/* .help
+	 * Shows the help usage text for a command, or shows the list of commands
 	 */
 	 if(msg.startsWith(prefix+"help")){
-	 	let helpInfo = [
-	 	"```im gay```",
-	 	]
-	 	msgChannel.sendMessage(helpInfo);
+	 	if(msg.length > (prefix+"help").length+1){
+	 		msgChannel.sendMessage(help[msg.substring((prefix+"help").length+1)]);
+	 	}
+	 	else{
+	 		msgChannel.sendMessage("say hi");
+	 	}
 	 }
+
 	/* .ping
 	 * Checks to see if the bot if alive by replying 'pong'
 	 */
@@ -50,67 +155,56 @@ bot.on('message', message =>{
 		return;
 	 }
 
-	/* .uptime
-	 * Checks how long the bot has been operational
-	 */
-	 if(msg === prefix+"uptime"){
-		try{
-			let time = process.uptime();
-			let hours = Math.floor(time/3600);
-			time = time - hours*3600;
-			let minutes = Math.floor(time/60);
-			let seconds = Math.floor(time - minutes * 60);
-			msgChannel.sendMessage("`Uptime: "+hours+" hours, "+minutes+" minutes, "+seconds+" seconds`");
-		}
-		catch(err){
-			msgChannel.sendMessage("`"+err+"`");
-		}
-	 }
-
-	/* .restart
-	 * Restarts the bot with any code changes
-	 */
- 	 if(msg === prefix+"restart" && ownerId.indexOf(message.author.id) != -1){
-		msgChannel.sendMessage("`Restarting...`").then(() => {
-		process.exit(1);});
-	 }
-
 	/* .delete
-	 * Deletes specified number of messages from channel
+	 * Deletes messages based on args
 	 */
-	 if(msg.startsWith(prefix+"delete")){
-		try{
-			let hasParams = message.mentions.users.size > 0 || message.content.substring(prefix.length + 7).length != 0; //7 represents length of 'delete' and space
-			if(hasParams){
-				if(message.mentions.users.size > 0){
-					let usrID = message.mentions.users.first().id;
-					let messageCount = parseInt(message.content.substring(prefix.length+7+usrID.length+4)) +1;
-					message.channel.fetchMessages({limit:messageCount}).then(messages=>{
-						messages.forEach(function(entry){
-							if(entry.author.id == usrID) entry.delete();
-						});
-					});
-				}
-				else{
-					let messageCount = parseInt(message.content.substring(prefix.length+7)) +1;
-					message.channel.fetchMessages({limit:messageCount}).then(messages=>message.channel.bulkDelete(messages));
-				}
-			}
-			else{
-				let usageInfo = [
-				"**Usage info:**",
-				"`"+prefix+"delete [@user] X`",
-				"*@user* (optional) - Target mentioned user",
-				"*X* - Delete from the last amount of messages"
-				];
-				msgChannel.sendMessage(usageInfo);
-				return;
-			}
-		}
-		catch(err){
-			msgChannel.sendMessage("`"+err+"`");
-		}
-	 }
+	 if(msg.startsWith(prefix+"delete") && message.guild.member(message.author).permissions.hasPermission("MANAGE_MESSAGES")){
+	 		//checks firstmost if the bot has permission to manage messages
+	 		try{
+		 		if(!message.guild.member(bot.user).permissions.hasPermission("MANAGE_MESSAGES")){
+	     			msgChannel.sendMessage("`Error: I don't have the necessary permissions for that!`");
+	     			return;
+	     		}
+	     		let initmsg = message;
+	     		let args = initmsg.content.substring((prefix+"delete").length +1).split(" ");
+	     		/*let messageCount = 50; //default value of 0
+	     		for(var n in args){
+	     			if(!isNaN(args[n]) && parseInt(args[n]) > 0){
+	     				messageCount = parseInt(args[n]);
+	     				break;
+	     			}
+	     		}*/
+	     		message.delete();
+	     		if(hasMentions = initmsg.mentions.users.size > 0){
+	     			let userIDs = [];
+	     			initmsg.mentions.users.forEach(function(entry){
+	     				userIDs.push(entry.id);
+	     			});
+	     			initmsg.channel.fetchMessages().then(messages=>{
+	     				initmsg.channel.bulkDelete(messages.filter(function(entry){
+	     					if(userIDs.indexOf(entry.author.id) != -1) return true;
+	     				}));
+	     			});
+	     		}
+	     		else if(args[0] === "contains"){
+	     			initmsg.channel.fetchMessages().then(messages=>{
+	     				initmsg.channel.bulkDelete(messages.filter(function(entry){
+	     					if(entry.content.includes(args[1])) return true;
+	     				}));
+	     			});
+	     		}
+	     		else if(!isNaN(args[0]) && parseInt(args[0]) >= 0){
+	     			initmsg.channel.fetchMessages({limit:(parseInt(args[0]))}).then(messages=>initmsg.channel.bulkDelete(messages));
+	     		}
+	     		else{
+	     			msgChannel.sendMessage(help["delete"]);
+	     		}
+     		}
+	     	catch(err){
+	     		msgChannel.sendMessage(err);
+	     	}
+
+	 }	 
 
 	/* .setname
 	 * Changes the username of the bot (limited to 2 requests/hr)
@@ -175,8 +269,13 @@ bot.on('message', message =>{
      if(msg.startsWith(prefix+"ban")){
      	let guildUser = message.guild.member(message.author); //creates a guild user of message author
      	try{
+     		if(!message.guild.member(bot.user).permissions.hasPermission("BAN_MEMBERS")){
+     			msgChannel.sendMessage("`Error: I don't have the necessary permissions for that!`");
+     			return;
+     		}
 	     	if(guildUser.permissions.hasPermission("BAN_MEMBERS") && message.mentions.users.size === 1){
-	     		let reason = msg.substring(msg.indexOf("-reason")+8);
+	     		let reason = "";
+	     		if(msg.indexOf("--") != -1) reason = msg.substring(msg.indexOf("--")+2);
 	     		let user = message.guild.member(message.mentions.users.first());
 	     		user.ban();
 	     		if(reason.length != 0){
@@ -185,13 +284,7 @@ bot.on('message', message =>{
 	     		msgChannel.sendMessage("Banned <@" + user.id + ">");
 	     	}
 	     	else{
-	     		let usageInfo = [
-	     		"**kick**: Kicks the tagged user (limit 1 tag per command) from the server",
-	     		"`"+prefix+"kick @user [-reason ...]`",
-	     		"`-reason ...` (optional) : Messages the kicked user the reason why they were kicked",
-	     		"`Example) "+prefix+"kick @user -reason Verbal abuse`"
-	     		];
-	     		msgChannel.sendMessage(usageInfo);
+	     		msgChannel.sendMessage(help["ban"]);
 	     	}
      	}
      	catch(err){
@@ -205,8 +298,13 @@ bot.on('message', message =>{
      if(msg.startsWith(prefix+"kick")){
      	let guildUser = message.guild.member(message.author); //creates a guild user of message author
      	try{
+     		if(!message.guild.member(bot.user).permissions.hasPermission("KICK_MEMBERS")){
+     			msgChannel.sendMessage("`Error: I don't have the necessary permissions for that!`");
+     			return;
+     		}
 	     	if(guildUser.permissions.hasPermission("KICK_MEMBERS") && message.mentions.users.size === 1){
-	     		let reason = msg.substring(msg.indexOf("-reason")+8);
+	     		let reason = "";
+	     		if(msg.indexOf("--") != -1) reason = msg.substring(msg.indexOf("--")+2);
 	     		let user = message.guild.member(message.mentions.users.first());
 	     		user.kick();
 	     		if(reason.length != 0){
@@ -215,20 +313,13 @@ bot.on('message', message =>{
 	     		msgChannel.sendMessage("Kicked <@" + user.id + ">");
 	     	}
 	     	else{
-	     		let usageInfo = [
-	     		"**kick**: Kicks the tagged user (limit 1 tag per command) from the server",
-	     		"`"+prefix+"kick @user [-reason ...]`",
-	     		"`-reason ...` (optional) : Messages the kicked user the reason why they were kicked",
-	     		"`Example) "+prefix+"kick @user -reason Verbal abuse`"
-	     		];
-	     		msgChannel.sendMessage(usageInfo);
+	     		msgChannel.sendMessage(help["kick"]);
 	     	}
      	}
      	catch(err){
      		msgChannel.sendMessage("`"+err+"`");
      	}
      }
-
 
 	/* .info
 	 * Pulls information about the tagged user and outputs it in channel or PM with the optional -pm tag.
@@ -237,12 +328,7 @@ bot.on('message', message =>{
 		try{
 		//if no mentions
 		if(message.mentions.users.size == 0 || message.mentions.users.size > 1){
-			let usageInfo = [
-				"**Info:** Gets a single tagged user's profile information.",
-				"`"+prefix+"info @user [-pm]`",
-				"`-pm` (optional) : Messages the user info privately in a direct message",
-			];
-			msgChannel.sendMessage(usageInfo);
+			msgChannel.sendMessage(help["info"]);
 			return;
 		}
 		//idea for tags - splice them out into a different array and send that
@@ -267,6 +353,9 @@ bot.on('message', message =>{
 		else{
 			msgChannel.sendMessage(infoArray);
 		}
+		if(msg.indexOf("-hide") != -1){
+			message.delete();
+		}
 		/*
 		for(var key in infoArray){
 			console.log("key " + key + " has value " + infoArray[key]);
@@ -278,59 +367,7 @@ bot.on('message', message =>{
 		}
 	 }
 
-	//legacy command left in for luls
-	if(msg === 'fuzzy') {
-		var id = "134090963395149824";
-		var textArray = [
-			"is a tsun",
-			"is a gremlin",
-			"is bae",
-			"is haramBAE #neverforget",
-			"is pretty cute..i suppose",
-			"loves <@130784194925297664>",
-			"loves <@147447799573774336>",
-			"loves <@91725497318244352>",
-			"hates <@133352797776248832> :frowning:",
-			"can't speel",
-			"is sleeping",
-			"is a dorito chip",
-			"is currently zzzz",
-			"derp",
-			"is a hipster",
-			"is a dank meme",
-			"has imp ears",
-			"hnnnnggg",
-			"java >> python"
-		];
-		msgChannel.sendMessage("<@"+id+"> "+textArray[Math.floor(Math.random()*textArray.length)]);
-		return;
-	}
 
-	if(msg === 'hime') {
-		var id = "57872649673510912";
-		var textArray = [
-			"is a himedere",
-			"is a gremlin",
-			"is bae",
-			"is haramBAE #neverforget",
-			"is pretty cute..i suppose",
-			"hates <@133352797776248832> :frowning:",
-			"is negger",
-			"is pussywetflipflop",
-			"is a dorito chip",
-			"is currently sleeping with <@133352797776248832>",
-			"derp",
-			"is a hipster",
-			"is a dank meme",
-			"has imp ears",
-			"hnnnnggg",
-			"makes me wet",
-			"is the type of black girl that have short hair so the cum wont stick on her hair",
-			"is a himederp"
-		];
-		msgChannel.sendMessage("<@"+id+"> "+textArray[Math.floor(Math.random()*textArray.length)]);
-		return;
-	}
  });
 
 bot.login(token);
