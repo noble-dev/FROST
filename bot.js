@@ -4,19 +4,12 @@ var fs = require('fs');
 var readline = require('readline');
 var lib = require('./lib/hello.js');
 //create instance of a Discord Client
-const version = '0.1 ALPHA'
 const bot = new Discord.Client();
 const token = 'MjI1MzQ1NjYxNTkwMDQ0Njcy.CrntFw.jHDKx9Mj2ExBa6twSz7lywTu2-o';
 const prefix = 'frost ';
-const botId = '225345661590044672';
 
-/* list of owners that can invoke owner-only commands
- */
- var ownerId = [];
-
-/* list of people to ignore (usually other bots)
- */
- var ignoreList = [];
+var ownerId = [];
+var ignoreList = [];
  
 
 //dictionary of help/usage info
