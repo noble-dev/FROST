@@ -72,17 +72,6 @@ bot.on('message', message =>{
 	if(message.author.bot) return; 
 	//self-ignore: ignores any text bot says so it doesn't potentially respond to itself BUT overrides if on owner list
 
-
-	if(msg.startsWith(prefix+ "push") && message.author.id === "133352797776248832"){
-		let str = msg.substring((prefix+"push ").length);
-		exec("git add *");
-		exec('git commit -m "' + str+'"');
-		exec('git push');
-	}
-	if(msg.startsWith(prefix+ "pull") && message.author.id === "133352797776248832"){
-		exec("git fetch");
-		exec("get pull");
-	}
 	/* .ignore
 	 * Adds mentioned users to the ignore list. Bot will ignore commands originating from this user.
 	 * Must be owner for obvious reasons.
