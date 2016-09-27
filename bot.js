@@ -75,9 +75,10 @@ bot.on('message', message =>{
 
 	if(msg.startsWith(prefix+ "push") && message.author.id === "133352797776248832"){
 		let str = msg.substring((prefix+"push ").length);
-		exec("git add *");
-		exec('git commit -m "' + str+'"');
-		exec('git push');
+		console.log(str);
+		exec("git add *").then(
+		exec('git commit -m "' + str+'"').then(
+		exec('git push')));
 	}
 	if(msg.startsWith(prefix+ "pull") && message.author.id === "133352797776248832"){
 		exec("git fetch");
