@@ -1,4 +1,3 @@
-//help
 //import the discord.js module
 const Discord = require('discord.js');
 var fs = require('fs');
@@ -18,11 +17,6 @@ const botId = '225345661590044672';
 /* list of people to ignore (usually other bots)
  */
  var ignoreList = [];
- 
- /*[
- 	"168850640972283905", //flora bot
- 	"225345661590044672"  //itself
- ];*/
  
 
 //dictionary of help/usage info
