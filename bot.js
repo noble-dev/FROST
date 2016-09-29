@@ -1,15 +1,18 @@
 //import the discord.js module
 const Discord = require('discord.js');
 var fs = require('fs');
-var readline = require('readline');
-var lib = require('./lib/hello.js');
 var sys = require('util');
-var exec = require('child_process').exec;
-
+var jsonfile = require('jsonfile');
 //create instance of a Discord Client
 const bot = new Discord.Client();
 const token = 'MjI1MzQ1NjYxNTkwMDQ0Njcy.CrntFw.jHDKx9Mj2ExBa6twSz7lywTu2-o';
-const prefix = 'frost ';
+var prefix = "frost ";
+const devId = "133352797776248832"; // dev's id
+
+//FILE PATHS
+const ignorepath = './etc/ignoreList.txt';
+const settingspath = './etc/server_settings.json';
+const ownerpath = './etc/ownerlist.txt';
 
 var ownerId = [];
 var ignoreList = [];
@@ -17,6 +20,8 @@ var ignoreList = [];
 
 //dictionary of help/usage info
 const help = {
+	"ping"	 : ["`"+prefix+"ping`",
+				"Pings the bot for a return if the bot is alive or not. Simple stuff."],
 	"delete" : ["`"+prefix+"delete ...`",
 				"Deletes messages that meet the specified criteria. User must have permissions.\n",
 				"**Available parameters:**",
@@ -24,12 +29,12 @@ const help = {
 				"`"+prefix+"delete contains <text>` \n     Deletes all messages containing the text",
 				"`"+prefix+"delete <number>` \n     Deletes specified number of messages"
 				],
-	"info"   :  ["`"+prefix+"info @user [-pm] [-hide]`",
+	"info"   :  ["`"+prefix+"info @user [--pm] [--hide]`",
 				 "Gets the tagged user's profile information.\n",
 				 "**Parameters:**",
 				 "`@user`\n     (Required) The user to lookup",
-				 "`-pm`\n     (Optional) Messages the user info in a private message",
-				 "`-hide`\n     (Optional) Deletes the message that invoked this command."
+				 "`--pm`\n     (Optional) Messages the user info in a private message",
+				 "`--hide`\n     (Optional) Deletes the message that invoked this command."
 				],
 	"kick"   :  ["`"+prefix+"kick @user [--reason]`",
 				 "Kicks the mentioned user from the discord server.\n",
@@ -42,17 +47,22 @@ const help = {
 				 "**Parameters:**",
 				 "`@user`\n     (Required) The user to ban",
 				 "`--reason`\n     (Optional) Once banned, the user is messaged the specified reason\n     example usage: `"+prefix+"ban @user --Verbal Abuse`"
-			    ]
+			    ],
+	"ignore" :  ["`"+prefix+"ignore @user(s)`",
+				 "Sets the bot to ignore the mentioned users' commands.\n",
+				 "**Parameters:**",
+				 "`@user(s)`\n     (Required) The users to ignore"
+				 ]
 };
 
 bot.on('ready', () => {
 	console.log("Hello, world.");
-	fs.readFile('./etc/ignoreList.txt', function(err, data){
+	fs.readFile(ignorepath, function(err, data){
 	 	if(err) throw err;
 	 	ignoreList = data.toString().split('\n');
 	 	console.log("Loaded ignore list.");
  	});
- 	fs.readFile('./etc/ownerlist.txt', function(err, data){
+ 	fs.readFile(ownerpath, function(err, data){
 	 	if(err) throw err;
 	 	ownerId = data.toString().split('\n');
 	 	console.log("Loaded owners list.");
@@ -61,12 +71,17 @@ bot.on('ready', () => {
 
 bot.on('guildMemberAdd', (guild, member) => {
   //console.log(member + " joined " + guild.name);
+  if(guild.id === "144729397826420736"){ //malicious intent
+  	member.addRole(guild.roles.find('name', 'Guest'));
+  	guild.channels.find('name', 'officer-chat').sendMessage(member + " just joined the server. Do a background check plz.");
+  }
 });
 
 bot.on('message', message =>{
 	//scope variables////////////////
 	var msg = message.content;
 	var msgChannel = message.channel;
+	cmd = msg.slice(prefix.length).split(" ");
 	/////////////////////////////////
 	if(!(ownerId.indexOf(message.author.id) != -1) && ignoreList.indexOf(message.author.id) != -1) return;
 	if(message.author.bot) return; 
@@ -89,9 +104,17 @@ bot.on('message', message =>{
 			ignoredUsers.push("`Now ignoring " + entry.username + "`");
 			}
 		});
-		msgChannel.sendMessage(ignoredUsers);
 	 }
 
+	 if(msg.startsWith("frost test get")){
+	 	jsonfile.readFile('./etc/server_settings.json', function(err, obj){
+	 		if (err) console.log(err);
+	 		else {
+	 			var sid = ""+message.guild.region+""+message.guild.id;
+	 			//console.log(obj[sid][0].hasOwnProperty("nssame"));
+	 		}
+	 	});
+	 }
 	/* .unignore
 	 * removes person from ignore list
 	 */
@@ -133,7 +156,11 @@ bot.on('message', message =>{
 	 		msgChannel.sendMessage(help[msg.substring((prefix+"help").length+1)]);
 	 	}
 	 	else{
-	 		msgChannel.sendMessage("I didn't recognize that command");
+	 		msgChannel.sendMessage(
+	 			["Type `"+prefix+"help <command>` to see usage detailed information for that command.\n",
+	 			"Current available commands are:",
+	 			"`"+Object.keys(help) +"`",
+	 			]);
 	 	}
 	 }
 
@@ -148,7 +175,7 @@ bot.on('message', message =>{
 	/* .delete
 	 * Deletes messages based on args
 	 */
-	 if(msg.startsWith(prefix+"delete") && message.guild.member(message.author).permissions.hasPermission("MANAGE_MESSAGES")){
+	 if(msg.startsWith(prefix+"delete") && (ownerId.indexOf(message.author.id) != -1 || message.guild.member(message.author).permissions.hasPermission("MANAGE_MESSAGES"))){
 	 		//checks firstmost if the bot has permission to manage messages
 	 		try{
 		 		if(!message.guild.member(bot.user).permissions.hasPermission("MANAGE_MESSAGES")){
@@ -196,28 +223,11 @@ bot.on('message', message =>{
 
 	 }	 
 
-	/* .setname
-	 * Changes the username of the bot (limited to 2 requests/hr)
-	 * Only useable by anyone set as ownerId (for obvious reasons)
-	 */
-	 if(msg.startsWith(prefix+"setname") && ownerId.indexOf(message.author.id) != -1){
-		bot.user.setUsername(msg.substring((prefix+"setname").length + 1));
-	 }
-
-	/* .setnickname
-	 * Changes the nickname of the bot
-	 * Only useable by anyone set as ownerId (for obvious reasons)
-	 */
-	  if(msg.startsWith(prefix+"setnickname") && ownerId.indexOf(message.author.id) != -1){
-		message.guild.member(bot.user).setNickname(msg.substring((prefix+"setnickname").length+1));
-	  }
-
-	/* .setstatus
-	 * Changes the 'currently playing' status/game of the bot
-	 * Only useable by ownerId (for obvious reasons)
-	 */
-	 if(msg.startsWith(prefix+"setstatus") && ownerId.indexOf(message.author.id) != -1){
- 		bot.user.setStatus("online", msg.substring((prefix+"setstatus").length+1));
+	 if(msg.startsWith(prefix+"set") && ownerId.indexOf(message.author.id) != -1 && cmd.length > 2){
+	 	if(cmd[1] === "username") bot.user.setUsername(cmd[2]);
+	 	else if(cmd[1] === "nickname") message.guild.member(bot.user).setNickname(cmd[2]);
+	 	else if(cmd[1] === "status") bot.user.setStatus("online", cmd[2]);
+	 	message.delete();
 	 }
 
 	/* .try
@@ -319,13 +329,13 @@ bot.on('message', message =>{
 			"**Account created: **" + user.creationDate,
 			"**Avatar URL: **" + user.avatarURL
 		];
-		if(msg.indexOf("-pm") != -1){
+		if(msg.indexOf("--pm") != -1){
 			message.author.sendMessage(infoArray);
 		}
 		else{
 			msgChannel.sendMessage(infoArray);
 		}
-		if(msg.indexOf("-hide") != -1){
+		if(msg.indexOf("--hide") != -1){
 			message.delete();
 		}
 		/*
@@ -339,7 +349,33 @@ bot.on('message', message =>{
 		}
 	 }
 
-
+	 if(msg.startsWith(prefix+"chatbot start learn") && message.author.id === "133352797776248832"){
+	 	msgChannel.sendMessage(
+	 		["Initiating recording for " + message.mentions.users.first().username,
+	 		"Let me know when to stop learning by typing `"+prefix+"chatbot stop learn @"+message.mentions.users.first().username+"`",
+	 		" --using *Pandorabots Artificial Learning Platform*"
+	 		]);
+	 }
+	 if(msg.startsWith(prefix+"chatbot stop learn") && message.author.id === "133352797776248832"){
+	 	let name = message.mentions.users.first().username;
+	 	msgChannel.sendMessage(
+	 		["Stopped recording for " + message.mentions.users.first().username,
+	 		 "`lib/"+name + "/msgs.json - POST: 202 (Accepted)`",
+	 		 "`lib/"+name+"/userlist.json - POST: 202 (Accepted)`",
+	 		 "`lib/"+name+"/responses.json - POST: 202 (Accepted)`",
+	 		 "`lib/"+name+"/feed.pbot - POST: 202 (Accepted)`",
+	 		 "`Fetching...`",
+	 		 "`Retrieving to lib/"+name+"/responselist.pbot - GET: 200 (Valid)`",
+	 		 "`Retrieving to lib/"+name+"/validgenerator.json - GET: 200 (Valid)`",
+	 		 "`Stitching valid data...`",
+	 		 "`Warn: My ResponseController database is under the recommended size (>1mb). Please try to learn more.`",
+	 		 "",
+	 		 "`COMPLETE`"
+	 		]);
+	 }
+	 if(msg === "e"){
+	 	msgChannel.sendMessage(":boom: :gun: <@"+ message.author.id + "> did it!");
+	 }
  });
 
 bot.login(token);
