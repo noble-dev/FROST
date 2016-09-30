@@ -1,10 +1,1 @@
-{
-	"us-west144729397826420736" :[
-		{"name": "malicious"},
-		{"prefix": "abC"}
-	],
-	"siel" :[
-		{"name": "siel"},
-		{"prefix": "def"}
-	]
-}
+{"144729397826420736":[{"name":"Malicious Intent","greetpm":"Hi, welcome to the Malicious Intent community. I am its personal slave bot **mAlice**.\nIf you haven't already checked out our website, please do so! It's very professional and shit: http://malicious.gg\nOtherwise, please chill in our <#144729397826420736> while we talk shit about you in our members chat.","greetmsg":"Welcome to the server @user 😃","greetch":"guest-chat","defaultrole":"Guest"}],"231466236544811009":[{"gprefix":"frost "}],"228262346466918401":[{"greetmsg":"@everyone @user hi","greetch":"testing","defaultrole":"dummy"}],"134092197753651200":[{"name":"Fuzen's Lounge","greetpm":"hi","defaultrole":"🎂"}]}

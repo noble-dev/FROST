@@ -70,12 +70,29 @@ bot.on('ready', () => {
 });
 
 bot.on('guildMemberAdd', (guild, member) => {
-  //console.log(member + " joined " + guild.name);
-  if(guild.id === "144729397826420736"){ //malicious intent
-  	member.addRole(guild.roles.find('name', 'Guest'));
-  	guild.channels.find('name', 'officer-chat').sendMessage(member + " just joined the server. Do a background check plz.");
-  }
+	jsonfile.readFile(settingspath, function(err, obj){
+		if(err) throw err;
+		if(obj[guild.id][0].hasOwnProperty('defaultrole')) member.addRole(guild.roles.find('name', obj[guild.id][0].defaultrole));
+		if(obj[guild.id][0].hasOwnProperty('greetmsg')) {
+			let greet = obj[guild.id][0].greetmsg;
+			if(greet.includes("@user")) greet = greet.replace("@user", "<@"+member.id+">");
+			guild.channels.find('name', obj[guild.id][0].greetch).sendMessage(greet);
+		}
+		if(obj[guild.id][0].hasOwnProperty('greetpm')) member.sendMessage(obj[guild.id][0].greetpm);
+	});
 });
+
+bot.on('guildCreate', (guild)=>{
+	jsonfile.readFile(settingspath, function(err, obj){
+		if(err) console.log(err);
+		obj[guild.id] = [];
+		obj[guild.id].push({name: guild.name});
+		jsonfile.writeFile(settingspath, obj, function(err){
+			if(err) console.log(err);
+		});
+	});
+});
+
 
 bot.on('message', message =>{
 	//scope variables////////////////
@@ -106,15 +123,22 @@ bot.on('message', message =>{
 		});
 	 }
 
-	 if(msg.startsWith("frost test get")){
+	 if(msg.startsWith(prefix+"init") && ownerId.indexOf(message.author.id) != -1){
 	 	jsonfile.readFile('./etc/server_settings.json', function(err, obj){
 	 		if (err) console.log(err);
-	 		else {
-	 			var sid = ""+message.guild.region+""+message.guild.id;
-	 			//console.log(obj[sid][0].hasOwnProperty("nssame"));
+	 		if(!obj.hasOwnProperty(message.guild.id) || msg.includes("--reset")){
+	 			obj[message.guild.id] = [];
+	 			obj[message.guild.id].push({name: message.guild.name});
+	 			jsonfile.writeFile(settingspath, obj, function(err){ if(err) console.log(err); });
+	 			msgChannel.sendMessage("`Server settings initialized.`");
+	 		}
+	 		else{
+	 			msgChannel.sendMessage("`Settings for this server already initialized!`");
 	 		}
 	 	});
 	 }
+
+
 	/* .unignore
 	 * removes person from ignore list
 	 */
@@ -223,11 +247,43 @@ bot.on('message', message =>{
 
 	 }	 
 
+	 /* .set
+	 * various set functions
+	 */
 	 if(msg.startsWith(prefix+"set") && ownerId.indexOf(message.author.id) != -1 && cmd.length > 2){
-	 	if(cmd[1] === "username") bot.user.setUsername(cmd[2]);
-	 	else if(cmd[1] === "nickname") message.guild.member(bot.user).setNickname(cmd[2]);
-	 	else if(cmd[1] === "status") bot.user.setStatus("online", cmd[2]);
-	 	message.delete();
+	 	let x = msg.substring((prefix+"set "+cmd[1]+" ").length);
+	 	if(cmd[1] === "username") bot.user.setUsername(x);
+	 	else if(cmd[1] === "nickname") message.guild.member(bot.user).setNickname(x);
+	 	else if(cmd[1] === "status") bot.user.setStatus("online", x);
+	 	else if(cmd[1] === "defaultrole"){
+	 		jsonfile.readFile(settingspath, function(err, obj){
+	 			if(err) { msgChannel.sendMessage("`"+err+"`"); return; }
+	 			if(message.guild.roles.exists('name', x)){
+	 				obj[message.guild.id][0]["defaultrole"] = x;
+	 				jsonfile.writeFile(settingspath, obj, function(err){if(err)throw err;});
+	 				msgChannel.sendMessage("`Default role on this server set to: " + x +"`");
+	 			}
+	 			else msgChannel.sendMessage("`ERROR: No such role exists on this server!`");
+	 		});
+	 	}
+	 	else if(cmd[1] === "greetmsg"){
+	 		jsonfile.readFile(settingspath, function(err, obj){
+	 			if(err) { msgChannel.sendMessage("`"+err+"`"); return; }
+ 				obj[message.guild.id][0]["greetmsg"] = x;
+ 				obj[message.guild.id][0]["greetch"] = message.channel.name;
+ 				jsonfile.writeFile(settingspath, obj, function(err){ if(err) msgChannel.sendMessage("`"+err+"`");});
+				msgChannel.sendMessage("`Greet message successfully set.`");
+
+	 		});
+	 	}
+	 	else if(cmd[1] === "greetpm"){
+	 		jsonfile.readFile(settingspath, function(err, obj){
+	 			if(err) { msgChannel.sendMessage("`"+err+"`"); return; }
+	 			obj[message.guild.id][0]["greetpm"] = x;
+	 			jsonfile.writeFile(settingspath, obj, function(err){ if(err) msgChannel.sendMessage("`"+err+"`"); });
+	 			msgChannel.sendMessage("`Greet private message successfully set.`");
+	 		});
+	 	}
 	 }
 
 	/* .try
