@@ -14,6 +14,7 @@ const ignorepath = './etc/ignoreList.txt';
 const settingspath = './etc/server_settings.json';
 const ownerpath = './etc/ownerlist.txt';
 
+//dont touch these - they are initialized from the code. edit thru text file
 var ownerId = [];
 var ignoreList = [];
  
@@ -57,29 +58,39 @@ const help = {
 
 bot.on('ready', () => {
 	console.log("Hello, world.");
-	fs.readFile(ignorepath, function(err, data){
-	 	if(err) throw err;
-	 	ignoreList = data.toString().split('\n');
-	 	console.log("Loaded ignore list.");
- 	});
- 	fs.readFile(ownerpath, function(err, data){
+	fs.readFile('./etc/ownerlist.txt', function(err, data){
 	 	if(err) throw err;
 	 	ownerId = data.toString().split('\n');
 	 	console.log("Loaded owners list.");
  	});
+
 });
 
 bot.on('guildMemberAdd', (guild, member) => {
 	jsonfile.readFile(settingspath, function(err, obj){
 		if(err) throw err;
-		if(obj[guild.id][0].hasOwnProperty('defaultrole')) member.addRole(guild.roles.find('name', obj[guild.id][0].defaultrole));
-		if(obj[guild.id][0].hasOwnProperty('greetmsg')) {
+		if(obj[guild.id][0].hasOwnProperty('defaultrole') && obj[guild.id][0].defaultrolestatus === "enabled") 
+			member.addRole(guild.roles.find('name', obj[guild.id][0].defaultrole));
+		if(obj[guild.id][0].hasOwnProperty('greetmsg') && obj[guild.id][0].greetmsgstatus === "enabled") {
 			let greet = obj[guild.id][0].greetmsg;
 			if(greet.includes("@user")) greet = greet.replace("@user", "<@"+member.id+">");
 			guild.channels.find('name', obj[guild.id][0].greetch).sendMessage(greet);
 		}
-		if(obj[guild.id][0].hasOwnProperty('greetpm')) member.sendMessage(obj[guild.id][0].greetpm);
+		if(obj[guild.id][0].hasOwnProperty('greetpm') && obj[guild.id][0].greetpmstatus === "enabled") 
+			member.sendMessage(obj[guild.id][0].greetpm);
+		if(obj[guild.id][0].hasOwnProperty('logchannel') && obj[guild.id][0].logchannelstatus === "enabled"){
+			guild.channels.find('name', obj[guild.id][0].logchannel).sendMessage(":white_check_mark: <@"+member.id+"> has joined the server.");
+		}
 	});
+});
+
+bot.on('guildMemberRemove', (guild, member) => {
+	jsonfile.readFile(settingspath, function(err, obj){
+		if(err) throw err;
+		if(obj[guild.id][0].hasOwnProperty('logchannel') && obj[guild.id][0].logchannelstatus === "enabled"){
+			guild.channels.find('name', obj[guild.id][0].logchannel).sendMessage(":x: <@"+member.id+"> has left the server.")
+		}
+	})
 });
 
 bot.on('guildCreate', (guild)=>{
@@ -95,40 +106,33 @@ bot.on('guildCreate', (guild)=>{
 
 
 bot.on('message', message =>{
-	//scope variables////////////////
+	//#scope variables////////////////
 	var msg = message.content;
 	var msgChannel = message.channel;
 	cmd = msg.slice(prefix.length).split(" ");
 	/////////////////////////////////
-	if(!(ownerId.indexOf(message.author.id) != -1) && ignoreList.indexOf(message.author.id) != -1) return;
-	if(message.author.bot) return; 
-	//self-ignore: ignores any text bot says so it doesn't potentially respond to itself BUT overrides if on owner list
+	jsonfile.readFile(settingspath, function(err, obj){
+		ignoreList = obj[message.guild.id][0].ignoredUsers;
+	});
+	if(!(ownerId.indexOf(message.author.id) != -1) && ignoreList.indexOf(message.author.id) != -1) return; //if being ignored
+	if(message.author.bot) return;
 
-	/* .ignore
-	 * Adds mentioned users to the ignore list. Bot will ignore commands originating from this user.
-	 * Must be owner for obvious reasons.
-	 */
-	 if(msg.startsWith(prefix+"ignore") && message.mentions.users.size > 0 && ownerId.indexOf(message.author.id) != -1){
-		let ignoredUsers = [];
-		message.mentions.users.forEach(function(entry){
-			if(ignoreList.indexOf(entry.id) != -1){ msgChannel.sendMessage("`"+entry.username + " is already being ignored! Not added.`");}
-			else{
-			fs.appendFile('./etc/ignoreList.txt', "\n"+entry.id, function(err){
-				if(err) throw err;
-				console.log("Added " + entry.id + " to the ignore list");
-			})
-			ignoreList.push(entry.id);
-			ignoredUsers.push("`Now ignoring " + entry.username + "`");
-			}
-		});
-	 }
 
-	 if(msg.startsWith(prefix+"init") && ownerId.indexOf(message.author.id) != -1){
-	 	jsonfile.readFile('./etc/server_settings.json', function(err, obj){
+	/* #init 
+	  * initializes the json settings for the server command was issued from.
+	  */
+	 if(msg.startsWith(prefix+"init")){
+	 	if(ownerId.indexOf(message.author.id) == -1){
+	 			msgChannel.sendMessage("`Sorry! You do not have permissions to do that. Please contact an adult.`");
+	 			return;
+	 	}
+	 	jsonfile.readFile(settingspath, function(err, obj){
 	 		if (err) console.log(err);
 	 		if(!obj.hasOwnProperty(message.guild.id) || msg.includes("--reset")){
 	 			obj[message.guild.id] = [];
 	 			obj[message.guild.id].push({name: message.guild.name});
+	 			obj[message.guild.id][0]["ignoredUsers"] = [];
+	 			obj[message.guild.id][0]["ownerUsers"] = [];
 	 			jsonfile.writeFile(settingspath, obj, function(err){ if(err) console.log(err); });
 	 			msgChannel.sendMessage("`Server settings initialized.`");
 	 		}
@@ -139,14 +143,7 @@ bot.on('message', message =>{
 	 }
 
 
-	/* .unignore
-	 * removes person from ignore list
-	 */
-	 if(msg.startsWith(prefix+"unignore") && message.mentions.users.size > 0 && ownerId.indexOf(message.author.id) != -1){
-	 	
-	 }
-
-	/* .about
+	/* #about
 	 *
 	 */
 	 if(msg.startsWith(prefix+"about")){
@@ -172,7 +169,7 @@ bot.on('message', message =>{
 	 		]);
 	 }
 
-	/* .help
+	/* #help
 	 * Shows the help usage text for a command, or shows the list of commands
 	 */
 	 if(msg.startsWith(prefix+"help")){
@@ -188,15 +185,14 @@ bot.on('message', message =>{
 	 	}
 	 }
 
-	/* .ping
+	/* #ping
 	 * Checks to see if the bot if alive by replying 'pong'
 	 */
 	 if(msg === prefix+"ping"){
 	 	msgChannel.sendMessage("pong");
-		return;
 	 }
 
-	/* .delete
+	/* #delete
 	 * Deletes messages based on args
 	 */
 	 if(msg.startsWith(prefix+"delete") && (ownerId.indexOf(message.author.id) != -1 || message.guild.member(message.author).permissions.hasPermission("MANAGE_MESSAGES"))){
@@ -247,43 +243,229 @@ bot.on('message', message =>{
 
 	 }	 
 
-	 /* .set
+	/* #ignore
+	  */
+	 if(msg.startsWith(prefix+"ignore")){
+	 	if(ownerId.indexOf(message.author.id) == -1){
+	 		msgChannel.sendMessage(":warning: `Sorry! You do not have permissions to do that. Please contact an adult.`");
+	 			return;
+	 	}
+	 	if(message.mentions.users.size >= 1){
+		 	jsonfile.readFile(settingspath, function(err, obj){
+		 		let server = obj[message.guild.id][0];
+		 		let ignored = server.ignoredUsers;
+		 		let msglog = [];
+		 		message.mentions.users.forEach(function(entry){
+		 			if(ignored.indexOf(entry.id) == -1){
+		 				ignored.push(entry.id);
+		 				msglog.push(":white_check_mark: `"+entry.username+" successfully added to ignore list.`");
+		 			}
+		 			else{
+		 				msglog.push(":warning: `"+entry.username+" is already being ignored.`");
+		 			}
+		 		});
+		 		jsonfile.writeFile(settingspath, obj, function(err){});
+		 		msgChannel.sendMessage(msglog);
+		 	});
+	 	}
+	 	else{
+	 		msgChannel.sendMessage("placeholder");
+	 	}
+	 }
+
+	/* #unignore
+	 */
+	 if(msg.startsWith(prefix+"unignore")){
+	 	if(ownerId.indexOf(message.author.id) == -1){
+	 		msgChannel.sendMessage(":warning: `Sorry! You do not have permissions to do that. Please contact an adult.`");
+	 			return;
+	 	}
+	 	if(message.mentions.users.size >= 1){
+	 		jsonfile.readFile(settingspath, function(err, obj){
+		 		let server = obj[message.guild.id][0];
+		 		let ignored = server.ignoredUsers;
+		 		let msglog = [];
+		 		message.mentions.users.forEach(function(entry){
+		 			if(ignored.indexOf(entry.id) > -1){ //exists in ignored list
+		 				ignored = ignored.splice(ignored.indexOf(entry.id), 1);
+		 				msglog.push(":white_check_mark: `"+entry.username+" successfully removed from ignore list`");
+		 			}
+		 			else{
+		 				msglog.push(":Warning: `"+entry.username+" is not being ignored.`");
+		 			}
+		 		});
+		 		jsonfile.writeFile(settingspath, obj, function(err){});
+		 		msgChannel.sendMessage(msglog);
+	 		});
+	 	}
+	 	else{
+	 		msgChannel.sendMessage("placeholder");
+	 	}
+	 }
+
+	/* #set
 	 * various set functions
 	 */
-	 if(msg.startsWith(prefix+"set") && ownerId.indexOf(message.author.id) != -1 && cmd.length > 2){
-	 	let x = msg.substring((prefix+"set "+cmd[1]+" ").length);
-	 	if(cmd[1] === "username") bot.user.setUsername(x);
-	 	else if(cmd[1] === "nickname") message.guild.member(bot.user).setNickname(x);
-	 	else if(cmd[1] === "status") bot.user.setStatus("online", x);
-	 	else if(cmd[1] === "defaultrole"){
-	 		jsonfile.readFile(settingspath, function(err, obj){
-	 			if(err) { msgChannel.sendMessage("`"+err+"`"); return; }
-	 			if(message.guild.roles.exists('name', x)){
-	 				obj[message.guild.id][0]["defaultrole"] = x;
-	 				jsonfile.writeFile(settingspath, obj, function(err){if(err)throw err;});
-	 				msgChannel.sendMessage("`Default role on this server set to: " + x +"`");
-	 			}
-	 			else msgChannel.sendMessage("`ERROR: No such role exists on this server!`");
-	 		});
-	 	}
-	 	else if(cmd[1] === "greetmsg"){
-	 		jsonfile.readFile(settingspath, function(err, obj){
-	 			if(err) { msgChannel.sendMessage("`"+err+"`"); return; }
- 				obj[message.guild.id][0]["greetmsg"] = x;
- 				obj[message.guild.id][0]["greetch"] = message.channel.name;
- 				jsonfile.writeFile(settingspath, obj, function(err){ if(err) msgChannel.sendMessage("`"+err+"`");});
-				msgChannel.sendMessage("`Greet message successfully set.`");
+	 if(msg.startsWith(prefix+"set") && cmd.length > 2){
+	 	try{
+	 		if(ownerId.indexOf(message.author.id) == -1){
+	 			msgChannel.sendMessage(":warning: `Sorry! You do not have permissions to do that. Please contact an adult.`");
+	 			return;
+	 		}
+		 	let x = msg.substring((prefix+"set "+cmd[1]+" ").length);
+		 	if(cmd[1] === "username") bot.user.setUsername(x);
+		 	else if(cmd[1] === "nickname") message.guild.member(bot.user).setNickname(x);
+		 	else if(cmd[1] === "status") bot.user.setStatus("online", x);
+		 	else if(cmd[1] === "defaultrole"){
+		 		jsonfile.readFile(settingspath, function(err, obj){
+		 			if(err) { msgChannel.sendMessage("`"+err+"`"); return; }
+		 			if(message.guild.roles.exists('name', x)){
+		 				obj[message.guild.id][0]["defaultrole"] = x;
+		 				obj[message.guild.id][0]["defaultrolestatus"] = "enabled";
+		 				jsonfile.writeFile(settingspath, obj, function(err){if(err)throw err;});
+		 				msgChannel.sendMessage("`Default role on this server set to: " + x +"`");
+		 			}
+		 			else msgChannel.sendMessage("`ERROR: No such role exists on this server!`");
+		 		});
+		 	}
+		 	else if(cmd[1] === "greetmsg"){
+		 		jsonfile.readFile(settingspath, function(err, obj){
+		 			if(err) { msgChannel.sendMessage("`"+err+"`"); return; }
+	 				obj[message.guild.id][0]["greetmsg"] = x;
+	 				obj[message.guild.id][0]["greetch"] = message.channel.name;
+	 				obj[message.guild.id][0]["greetmsgstatus"] = "enabled";
+	 				jsonfile.writeFile(settingspath, obj, function(err){ if(err) msgChannel.sendMessage("`"+err+"`");});
+					msgChannel.sendMessage("`Greet message successfully set.`");
 
-	 		});
+		 		});
+		 	}
+		 	else if(cmd[1] === "greetpm"){
+		 		jsonfile.readFile(settingspath, function(err, obj){
+		 			if(err) { msgChannel.sendMessage("`"+err+"`"); return; }
+		 			obj[message.guild.id][0]["greetpm"] = x;
+		 			obj[message.guild.id][0]["greetpmstatus"] = "enabled";
+		 			jsonfile.writeFile(settingspath, obj, function(err){ if(err) msgChannel.sendMessage("`"+err+"`"); });
+		 			msgChannel.sendMessage("`Greet private message successfully set.`");
+		 		});
+		 	}
+		 	else if(cmd[1] === "logchannel"){
+		 		if(message.guild.channels.exists('name', x)){
+			 		jsonfile.readFile(settingspath, function(err, obj){
+			 			if(err){msgChannel.sendMessage("`"+err+"`"); return; }
+			 			obj[message.guild.id][0]["logchannel"] = x;
+			 			obj[message.guild.id][0]["logchannelstatus"] = "enabled";
+			 			jsonfile.writeFile(settingspath, obj, function(err) { if(err) msgChannel.sendMessage("`"+err+"`")});
+			 			msgChannel.sendMessage("`Logging new and exiting users in #"+x+"`");
+			 		})
+		 		}
+		 		else msgChannel.sendMessage("`That channel does not exist on this server, or I do not have access to that channel.`");
+		 	}
+		 	else{
+		 		msgChannel.sendMessage(":warning: You have entered a `set` command that I didn't recognize. Type `"+prefix+"help set` for usage information"); 
+		 	}
 	 	}
-	 	else if(cmd[1] === "greetpm"){
-	 		jsonfile.readFile(settingspath, function(err, obj){
-	 			if(err) { msgChannel.sendMessage("`"+err+"`"); return; }
-	 			obj[message.guild.id][0]["greetpm"] = x;
-	 			jsonfile.writeFile(settingspath, obj, function(err){ if(err) msgChannel.sendMessage("`"+err+"`"); });
-	 			msgChannel.sendMessage("`Greet private message successfully set.`");
-	 		});
+	 	catch(err){
+	 		msgChannel.sendMessage("`"+err+"`");
 	 	}
+	 }
+
+    /* #toggle
+	 *
+	 */
+	 if(msg.startsWith(prefix+"toggle") && cmd.length > 1){
+	 	if(ownerId.indexOf(message.author.id) = -1){
+	 			msgChannel.sendMessage(":warning: `Sorry! You do not have permissions to do that. Please contact an adult.`");
+	 			return;
+	 	}
+		let x = msg.substring((prefix+"toggle "+cmd[1]+" ").length);
+		jsonfile.readFile(settingspath, function(err, obj){
+			if(err){msgChannel.sendMessage("`"+err+"`"); return; }
+			if(cmd[1] === "greetmsg"){
+				if(obj[message.guild.id][0].greetmsgstatus === "enabled") obj[message.guild.id][0].greetmsgstatus = "disabled";
+				else obj[message.guild.id][0].greetmsgstatus = "enabled";
+				let status = obj[message.guild.id][0].greetmsgstatus;
+				jsonfile.writeFile(settingspath, obj, function(err){ if(err) msgChannel.sendMessage("`"+err+"`"); return;});
+				msgChannel.sendMessage("`Greet message is now "+status+" on this server.`");
+			}
+			else if(cmd[1] === "greetpm"){
+				if(obj[message.guild.id][0].greetpmstatus === "enabled") obj[message.guild.id][0].greetpmstatus = "disabled";
+				else obj[message.guild.id][0].greetpmstatus = "enabled";
+				let status = obj[message.guild.id][0].greetpmstatus;
+				jsonfile.writeFile(settingspath, obj, function(err){ if(err) msgChannel.sendMessage("`"+err+"`"); return;});
+				msgChannel.sendMessage("`Greet PM is now "+status+" on this server.`");
+			}
+			else if(cmd[1] === "defaultrole"){
+				if(obj[message.guild.id][0].defaultrolestatus === "enabled") obj[message.guild.id][0].defaultrolestatus = "disabled";
+				else obj[message.guild.id][0].defaultrolestatus = "enabled";
+				let status = obj[message.guild.id][0].defaultrolestatus;
+				jsonfile.writeFile(settingspath, obj, function(err){ if(err) msgChannel.sendMessage("`"+err+"`"); return;});
+				msgChannel.sendMessage("`Default role is now "+status+" on this server.`");
+			}
+			else if(cmd[1] === "logchannel"){
+				if(x.includes("#")) x = x.replace("#", "");
+				if(obj[message.guild.id][0].logchannelstatus === "enabled") obj[message.guild.id][0].logchannelstatus = "disabled";
+				else obj[message.guild.id][0].logchannelstatus = "enabled";
+				let status = obj[message.guild.id][0].logchannelstatus;
+				jsonfile.writeFile(settingspath, obj, function(err){ if(err) msgChannel.sendMessage("`"+err+"`"); return;});
+				msgChannel.sendMessage("`LogChannel is now "+status+" on this server.`");
+			}
+			else{
+				msgChannel.sendMessage(":warning: You have entered a `toggle` command that I didn't recognize. Type `"+prefix+"help toggle` for usage information"); 
+			}
+		});
+
+	 }
+
+	/* #get
+	 */
+	 if(msg.startsWith(prefix+"get") && cmd.length > 1){
+	 	if(ownerId.indexOf(message.author.id) == -1){
+ 			msgChannel.sendMessage(":warning: `Sorry! You do not have permissions to do that. Please contact an adult.`");
+ 			return;
+	 	}
+	 	let x = msg.substring((prefix+"toggle "+cmd[1]+" ").length);
+		jsonfile.readFile(settingspath, function(err, obj){
+			let info = obj[message.guild.id][0];
+			if(cmd[1] === 'greetmsg'){
+				if(info.hasOwnProperty('greetmsg')) 
+					msgChannel.sendMessage("The current greet message is set to: ```"+info.greetmsg+"``` and it is **"+ info.greetmsgstatus+"`**in channel #"+info.greetch);
+				else 
+					msgChannel.sendMessage("`There is currently no greet message set. To set a greet message, type ["+ prefix + "set greetmsg <msg>] in the channel you wish to activate it in.`");
+			}
+			else if(cmd[1] === 'greetpm'){
+				if(info.hasOwnProperty('greetpm')) 
+					msgChannel.sendMessage("The current greet pm is set to: ```"+info.greetpm+"``` and it is **"+info.greetpmstatus+"** on this server.");
+				else
+					msgChannel.sendMessage("`There is currently no greet pm set. To set a greet pm, type ["+ prefix + "set greetpm <msg>]`");
+			}
+			else if(cmd[1] === 'defaultrole'){
+				if(info.hasOwnProperty('defaultrole')) 
+					msgChannel.sendMessage("The current default role is set to: `"+info.defaultrole+"` and it is **"+info.defaultrolestatus+"** on this server.");
+				else
+					msgChannel.sendMessage("`There is currently no default role set. To set a deafult role, type ["+ prefix + "set defaultrole <role name>]`");
+			}
+			else if(cmd[1] === 'logchannel'){
+				if(info.hasOwnProperty('logchannel')) 
+					msgChannel.sendMessage("The current logging channel is set to: #"+info.logchannel+" and it is **"+info.logchannelstatus+"** on this server.");
+				else
+					msgChannel.sendMessage("`There is currently no logging channel set. To set a logging channel, type ["+ prefix + "set logchannel <channel name>]`");
+			}
+			else if(cmd[1] === 'ignored'){
+				if(ignoreList.length > 0){
+					let usrs = [];
+					ignoreList.forEach(function(entry){
+						usrs.push(message.guild.fetchMember(entry).username);
+					});
+					msgChannel.sendMessage("Currently ignored users: ```"+usrs+"```");
+				}
+				else{
+					msgChannel.sendMessage("`Currently ignoring no users.`");
+				}
+			}
+			else{
+				msgChannel.sendMessage(":warning: You have entered a `get` command that I didn't recognize. Type `"+prefix+"help get` for usage information"); 
+			}
+		});	
 	 }
 
 	/* .try
@@ -305,6 +487,10 @@ bot.on('message', message =>{
      * Bans a single tagged user from server if message author has ban permissions
      */
      if(msg.startsWith(prefix+"ban")){
+     	if(ownerId.indexOf(message.author.id) == -1){
+	 			msgChannel.sendMessage(":warning: `Sorry! You do not have permissions to do that. Please contact an adult.`");
+	 			return;
+	 	}
      	let guildUser = message.guild.member(message.author); //creates a guild user of message author
      	try{
      		if(!message.guild.member(bot.user).permissions.hasPermission("BAN_MEMBERS")){
@@ -334,28 +520,27 @@ bot.on('message', message =>{
      * Kicks a single tagged user from server if message author has kick permissions
      */
      if(msg.startsWith(prefix+"kick")){
+     	if(ownerId.indexOf(message.author.id) == -1){
+	 			msgChannel.sendMessage(":warning: `Sorry! You do not have permissions to do that. Please contact an adult.`");
+	 			return;
+	 	}
      	let guildUser = message.guild.member(message.author); //creates a guild user of message author
-     	try{
-     		if(!message.guild.member(bot.user).permissions.hasPermission("KICK_MEMBERS")){
-     			msgChannel.sendMessage("`Error: I don't have the necessary permissions for that!`");
-     			return;
+ 		if(!message.guild.member(bot.user).permissions.hasPermission("KICK_MEMBERS")){
+ 			msgChannel.sendMessage("`Error: I don't have the necessary permissions for that!`");
+ 			return;
+ 		}
+     	if(guildUser.permissions.hasPermission("KICK_MEMBERS") && message.mentions.users.size === 1){
+     		let reason = "";
+     		if(msg.indexOf("--") != -1) reason = msg.substring(msg.indexOf("--")+2);
+     		let user = message.guild.member(message.mentions.users.first());
+     		user.kick();
+     		if(reason.length != 0){
+     			user.sendMessage("You were kicked from **" + message.guild.name + "** for the following reason: \n" + "```"+reason+"```");
      		}
-	     	if(guildUser.permissions.hasPermission("KICK_MEMBERS") && message.mentions.users.size === 1){
-	     		let reason = "";
-	     		if(msg.indexOf("--") != -1) reason = msg.substring(msg.indexOf("--")+2);
-	     		let user = message.guild.member(message.mentions.users.first());
-	     		user.kick();
-	     		if(reason.length != 0){
-	     			user.sendMessage("You were kicked from **" + message.guild.name + "** for the following reason: \n" + "```"+reason+"```");
-	     		}
-	     		msgChannel.sendMessage("Kicked <@" + user.id + ">");
-	     	}
-	     	else{
-	     		msgChannel.sendMessage(help["kick"]);
-	     	}
+     		msgChannel.sendMessage("Kicked <@" + user.id + ">");
      	}
-     	catch(err){
-     		msgChannel.sendMessage("`"+err+"`");
+     	else{
+     		msgChannel.sendMessage(help["kick"]);
      	}
      }
 
@@ -363,7 +548,6 @@ bot.on('message', message =>{
 	 * Pulls information about the tagged user and outputs it in channel or PM with the optional -pm tag.
 	 */
 	 if(msg.startsWith(prefix+"info")){
-		try{
 		//if no mentions
 		if(message.mentions.users.size == 0 || message.mentions.users.size > 1){
 			msgChannel.sendMessage(help["info"]);
@@ -391,47 +575,9 @@ bot.on('message', message =>{
 		else{
 			msgChannel.sendMessage(infoArray);
 		}
-		if(msg.indexOf("--hide") != -1){
-			message.delete();
-		}
-		/*
-		for(var key in infoArray){
-			console.log("key " + key + " has value " + infoArray[key]);
-			//console.log(guildUser.roles.array());
-		}*/}
-		catch(err){
-			console.log(err);
-			msgChannel.sendMessage("`"+err+"`");
-		}
 	 }
 
-	 if(msg.startsWith(prefix+"chatbot start learn") && message.author.id === "133352797776248832"){
-	 	msgChannel.sendMessage(
-	 		["Initiating recording for " + message.mentions.users.first().username,
-	 		"Let me know when to stop learning by typing `"+prefix+"chatbot stop learn @"+message.mentions.users.first().username+"`",
-	 		" --using *Pandorabots Artificial Learning Platform*"
-	 		]);
-	 }
-	 if(msg.startsWith(prefix+"chatbot stop learn") && message.author.id === "133352797776248832"){
-	 	let name = message.mentions.users.first().username;
-	 	msgChannel.sendMessage(
-	 		["Stopped recording for " + message.mentions.users.first().username,
-	 		 "`lib/"+name + "/msgs.json - POST: 202 (Accepted)`",
-	 		 "`lib/"+name+"/userlist.json - POST: 202 (Accepted)`",
-	 		 "`lib/"+name+"/responses.json - POST: 202 (Accepted)`",
-	 		 "`lib/"+name+"/feed.pbot - POST: 202 (Accepted)`",
-	 		 "`Fetching...`",
-	 		 "`Retrieving to lib/"+name+"/responselist.pbot - GET: 200 (Valid)`",
-	 		 "`Retrieving to lib/"+name+"/validgenerator.json - GET: 200 (Valid)`",
-	 		 "`Stitching valid data...`",
-	 		 "`Warn: My ResponseController database is under the recommended size (>1mb). Please try to learn more.`",
-	 		 "",
-	 		 "`COMPLETE`"
-	 		]);
-	 }
-	 if(msg === "e"){
-	 	msgChannel.sendMessage(":boom: :gun: <@"+ message.author.id + "> did it!");
-	 }
+	 if(msg.includes("--del")){message.delete();}
  });
 
 bot.login(token);
