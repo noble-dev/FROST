@@ -6,8 +6,9 @@ var jsonfile = require('jsonfile');
 //create instance of a Discord Client
 const bot = new Discord.Client();
 const token = 'MjI1MzQ1NjYxNTkwMDQ0Njcy.CrntFw.jHDKx9Mj2ExBa6twSz7lywTu2-o';
-var prefix = "frost ";
+var prefix = "!";
 const devId = "133352797776248832"; // dev's id
+const adminrole = "Bot Admin";
 
 //FILE PATHS
 const ignorepath = './etc/ignoreList.txt';
@@ -18,43 +19,6 @@ const ownerpath = './etc/ownerlist.txt';
 var ownerId = [];
 var ignoreList = [];
  
-
-//dictionary of help/usage info
-const help = {
-	"ping"	 : ["`"+prefix+"ping`",
-				"Pings the bot for a return if the bot is alive or not. Simple stuff."],
-	"delete" : ["`"+prefix+"delete ...`",
-				"Deletes messages that meet the specified criteria. User must have permissions.\n",
-				"**Available parameters:**",
-				"`"+prefix+"delete @user(s)` \n     Deletes all messages from the tagged users",
-				"`"+prefix+"delete contains <text>` \n     Deletes all messages containing the text",
-				"`"+prefix+"delete <number>` \n     Deletes specified number of messages"
-				],
-	"info"   :  ["`"+prefix+"info @user [--pm] [--hide]`",
-				 "Gets the tagged user's profile information.\n",
-				 "**Parameters:**",
-				 "`@user`\n     (Required) The user to lookup",
-				 "`--pm`\n     (Optional) Messages the user info in a private message",
-				 "`--hide`\n     (Optional) Deletes the message that invoked this command."
-				],
-	"kick"   :  ["`"+prefix+"kick @user [--reason]`",
-				 "Kicks the mentioned user from the discord server.\n",
-				 "**Parameters:**",
-				 "`@user`\n     (Required) The user to kick",
-				 "`--reason`\n     (Optional) Once kicked, the user is messaged the specified reason\n     example usage: `"+prefix+"kick @user --Verbal Abuse`"
-			    ],
-	"ban"    :  ["`"+prefix+"ban @user [--reason]`",
-				 "Bans the mentioned user from the discord server.\n",
-				 "**Parameters:**",
-				 "`@user`\n     (Required) The user to ban",
-				 "`--reason`\n     (Optional) Once banned, the user is messaged the specified reason\n     example usage: `"+prefix+"ban @user --Verbal Abuse`"
-			    ],
-	"ignore" :  ["`"+prefix+"ignore @user(s)`",
-				 "Sets the bot to ignore the mentioned users' commands.\n",
-				 "**Parameters:**",
-				 "`@user(s)`\n     (Required) The users to ignore"
-				 ]
-};
 
 bot.on('ready', () => {
 	console.log("Hello, world.");
@@ -98,6 +62,8 @@ bot.on('guildCreate', (guild)=>{
 		if(err) console.log(err);
 		obj[guild.id] = [];
 		obj[guild.id].push({name: guild.name});
+		obj[guild.id][0]["ignoredUsers"] = [];
+	 	obj[guild.id][0]["ownerUsers"] = [];
 		jsonfile.writeFile(settingspath, obj, function(err){
 			if(err) console.log(err);
 		});
@@ -111,10 +77,10 @@ bot.on('message', message =>{
 	var msgChannel = message.channel;
 	cmd = msg.slice(prefix.length).split(" ");
 	/////////////////////////////////
-	jsonfile.readFile(settingspath, function(err, obj){
+	/*jsonfile.readFile(settingspath, function(err, obj){
 		ignoreList = obj[message.guild.id][0].ignoredUsers;
 	});
-	if(!(ownerId.indexOf(message.author.id) != -1) && ignoreList.indexOf(message.author.id) != -1) return; //if being ignored
+	if(!(ownerId.indexOf(message.author.id) != -1) && ignoreList.indexOf(message.author.id) != -1) return; //if being ignored*/
 	if(message.author.bot) return;
 
 
@@ -122,8 +88,8 @@ bot.on('message', message =>{
 	  * initializes the json settings for the server command was issued from.
 	  */
 	 if(msg.startsWith(prefix+"init")){
-	 	if(ownerId.indexOf(message.author.id) == -1){
-	 			msgChannel.sendMessage("`Sorry! You do not have permissions to do that. Please contact an adult.`");
+	 	if(!message.guild.member(message.author).roles.exists('name', adminrole)){
+	 			msgChannel.sendMessage(":warning: Sorry! You must have the `"+adminrole+"` role to do that. Please contact an adult.");
 	 			return;
 	 	}
 	 	jsonfile.readFile(settingspath, function(err, obj){
@@ -141,7 +107,6 @@ bot.on('message', message =>{
 	 		}
 	 	});
 	 }
-
 
 	/* #about
 	 *
@@ -173,16 +138,6 @@ bot.on('message', message =>{
 	 * Shows the help usage text for a command, or shows the list of commands
 	 */
 	 if(msg.startsWith(prefix+"help")){
-	 	if(msg.length > (prefix+"help").length+1){
-	 		msgChannel.sendMessage(help[msg.substring((prefix+"help").length+1)]);
-	 	}
-	 	else{
-	 		msgChannel.sendMessage(
-	 			["Type `"+prefix+"help <command>` to see usage detailed information for that command.\n",
-	 			"Current available commands are:",
-	 			"`"+Object.keys(help) +"`",
-	 			]);
-	 	}
 	 }
 
 	/* #ping
@@ -195,62 +150,49 @@ bot.on('message', message =>{
 	/* #delete
 	 * Deletes messages based on args
 	 */
-	 if(msg.startsWith(prefix+"delete") && (ownerId.indexOf(message.author.id) != -1 || message.guild.member(message.author).permissions.hasPermission("MANAGE_MESSAGES"))){
-	 		//checks firstmost if the bot has permission to manage messages
-	 		try{
-		 		if(!message.guild.member(bot.user).permissions.hasPermission("MANAGE_MESSAGES")){
-	     			msgChannel.sendMessage("`Error: I don't have the necessary permissions for that!`");
-	     			return;
-	     		}
-	     		let initmsg = message;
-	     		let args = initmsg.content.substring((prefix+"delete").length +1).split(" ");
-	     		/*let messageCount = 50; //default value of 0
-	     		for(var n in args){
-	     			if(!isNaN(args[n]) && parseInt(args[n]) > 0){
-	     				messageCount = parseInt(args[n]);
-	     				break;
-	     			}
-	     		}*/
-	     		message.delete();
-	     		if(hasMentions = initmsg.mentions.users.size > 0){
-	     			let userIDs = [];
-	     			initmsg.mentions.users.forEach(function(entry){
-	     				userIDs.push(entry.id);
-	     			});
-	     			initmsg.channel.fetchMessages().then(messages=>{
-	     				initmsg.channel.bulkDelete(messages.filter(function(entry){
-	     					if(userIDs.indexOf(entry.author.id) != -1) return true;
-	     				}));
-	     			});
-	     		}
-	     		else if(args[0] === "contains"){
-	     			initmsg.channel.fetchMessages().then(messages=>{
-	     				initmsg.channel.bulkDelete(messages.filter(function(entry){
-	     					if(entry.content.includes(args[1])) return true;
-	     				}));
-	     			});
-	     		}
-	     		else if(!isNaN(args[0]) && parseInt(args[0]) >= 0){
-	     			initmsg.channel.fetchMessages({limit:(parseInt(args[0]))}).then(messages=>initmsg.channel.bulkDelete(messages));
-	     		}
-	     		else{
-	     			msgChannel.sendMessage(help["delete"]);
-	     		}
-     		}
-	     	catch(err){
-	     		msgChannel.sendMessage(err);
-	     	}
-
+	 if(msg.startsWith(prefix+"delete")){
+	 	if(message.guild.member(message.author).roles.exists('name', adminrole) || message.guild.member(message.author).permissions.hasPermission("MANAGE_MESSAGES")){
+		 	if(cmd[1] === "contains"){
+		 		let x = msg.replace(""+prefix+"delete contains ", "");
+		 		message.channel.fetchMessages().then(messages=>{
+		     		message.channel.bulkDelete(messages.filter(entry=> entry.content.includes(x)));
+		     	});
+		     	msgChannel.sendMessage("Deleted messages containing `"+x+ "`").then(msg=>msg.delete(5000));
+		 	}
+		 	else if(!isNaN(cmd[1]) && parseInt(cmd[1]) >= 0){
+		 		let id = message.id;
+		 		message.channel.fetchMessages({limit:(parseInt(cmd[1])+1)}).then(messages=>{
+		 			message.channel.bulkDelete(messages);
+		 		});
+		 	}
+		 	else if(message.mentions.users.size > 0){
+		 		let userIDs = [];
+	 			message.mentions.users.forEach(function(entry){
+	 				userIDs.push(entry.id);
+	 			});
+	 			message.channel.fetchMessages().then(messages=>{
+	 				message.channel.bulkDelete(messages.filter(entry => userIDs.indexOf(entry.author.id) !== -1));
+	 			});
+	 			message.delete(5000);
+		 	}
+		 	else{
+		 		msgChannel.sendMessage("placeholder");
+		 	}
+	 	}
+	 	else{
+	 		msgChannel.sendMessage(":warning: Sorry! You must have the `"+adminrole+"` role or `Manage Messages` permissions to do that. Please contact an adult.");
+	 		return;
+	 	}
 	 }	 
 
 	/* #ignore
 	  */
 	 if(msg.startsWith(prefix+"ignore")){
 	 	if(ownerId.indexOf(message.author.id) == -1){
-	 		msgChannel.sendMessage(":warning: `Sorry! You do not have permissions to do that. Please contact an adult.`");
+	 		msgChannel.sendMessage(":warning: `Sorry! You must have the `Bot Admin` role to do that. Please contact an adult.");
 	 			return;
 	 	}
-	 	if(message.mentions.users.size >= 1){
+	 	if(message.mentions.users.size > 0){
 		 	jsonfile.readFile(settingspath, function(err, obj){
 		 		let server = obj[message.guild.id][0];
 		 		let ignored = server.ignoredUsers;
@@ -277,7 +219,7 @@ bot.on('message', message =>{
 	 */
 	 if(msg.startsWith(prefix+"unignore")){
 	 	if(ownerId.indexOf(message.author.id) == -1){
-	 		msgChannel.sendMessage(":warning: `Sorry! You do not have permissions to do that. Please contact an adult.`");
+	 		msgChannel.sendMessage(":warning: `Sorry! You must have the `Bot Admin` role to do that. Please contact an adult.");
 	 			return;
 	 	}
 	 	if(message.mentions.users.size >= 1){
@@ -291,7 +233,7 @@ bot.on('message', message =>{
 		 				msglog.push(":white_check_mark: `"+entry.username+" successfully removed from ignore list`");
 		 			}
 		 			else{
-		 				msglog.push(":Warning: `"+entry.username+" is not being ignored.`");
+		 				msglog.push(":warning: `"+entry.username+" is not being ignored.`");
 		 			}
 		 		});
 		 		jsonfile.writeFile(settingspath, obj, function(err){});
@@ -307,65 +249,60 @@ bot.on('message', message =>{
 	 * various set functions
 	 */
 	 if(msg.startsWith(prefix+"set") && cmd.length > 2){
-	 	try{
-	 		if(ownerId.indexOf(message.author.id) == -1){
-	 			msgChannel.sendMessage(":warning: `Sorry! You do not have permissions to do that. Please contact an adult.`");
-	 			return;
-	 		}
-		 	let x = msg.substring((prefix+"set "+cmd[1]+" ").length);
-		 	if(cmd[1] === "username") bot.user.setUsername(x);
-		 	else if(cmd[1] === "nickname") message.guild.member(bot.user).setNickname(x);
-		 	else if(cmd[1] === "status") bot.user.setStatus("online", x);
-		 	else if(cmd[1] === "defaultrole"){
-		 		jsonfile.readFile(settingspath, function(err, obj){
-		 			if(err) { msgChannel.sendMessage("`"+err+"`"); return; }
-		 			if(message.guild.roles.exists('name', x)){
-		 				obj[message.guild.id][0]["defaultrole"] = x;
-		 				obj[message.guild.id][0]["defaultrolestatus"] = "enabled";
-		 				jsonfile.writeFile(settingspath, obj, function(err){if(err)throw err;});
-		 				msgChannel.sendMessage("`Default role on this server set to: " + x +"`");
-		 			}
-		 			else msgChannel.sendMessage("`ERROR: No such role exists on this server!`");
-		 		});
-		 	}
-		 	else if(cmd[1] === "greetmsg"){
-		 		jsonfile.readFile(settingspath, function(err, obj){
-		 			if(err) { msgChannel.sendMessage("`"+err+"`"); return; }
-	 				obj[message.guild.id][0]["greetmsg"] = x;
-	 				obj[message.guild.id][0]["greetch"] = message.channel.name;
-	 				obj[message.guild.id][0]["greetmsgstatus"] = "enabled";
-	 				jsonfile.writeFile(settingspath, obj, function(err){ if(err) msgChannel.sendMessage("`"+err+"`");});
-					msgChannel.sendMessage("`Greet message successfully set.`");
-
-		 		});
-		 	}
-		 	else if(cmd[1] === "greetpm"){
-		 		jsonfile.readFile(settingspath, function(err, obj){
-		 			if(err) { msgChannel.sendMessage("`"+err+"`"); return; }
-		 			obj[message.guild.id][0]["greetpm"] = x;
-		 			obj[message.guild.id][0]["greetpmstatus"] = "enabled";
-		 			jsonfile.writeFile(settingspath, obj, function(err){ if(err) msgChannel.sendMessage("`"+err+"`"); });
-		 			msgChannel.sendMessage("`Greet private message successfully set.`");
-		 		});
-		 	}
-		 	else if(cmd[1] === "logchannel"){
-		 		if(message.guild.channels.exists('name', x)){
-			 		jsonfile.readFile(settingspath, function(err, obj){
-			 			if(err){msgChannel.sendMessage("`"+err+"`"); return; }
-			 			obj[message.guild.id][0]["logchannel"] = x;
-			 			obj[message.guild.id][0]["logchannelstatus"] = "enabled";
-			 			jsonfile.writeFile(settingspath, obj, function(err) { if(err) msgChannel.sendMessage("`"+err+"`")});
-			 			msgChannel.sendMessage("`Logging new and exiting users in #"+x+"`");
-			 		})
-		 		}
-		 		else msgChannel.sendMessage("`That channel does not exist on this server, or I do not have access to that channel.`");
-		 	}
-		 	else{
-		 		msgChannel.sendMessage(":warning: You have entered a `set` command that I didn't recognize. Type `"+prefix+"help set` for usage information"); 
-		 	}
+ 		if(!message.guild.member(message.author).roles.exists('name', adminrole)){
+ 			msgChannel.sendMessage(":warning: Sorry! You must have the `"+adminrole+"` role to do that. Please contact an adult.");
+ 			return;
+ 		}
+	 	let x = msg.substring((prefix+"set "+cmd[1]+" ").length);
+	 	if(cmd[1] === "username") bot.user.setUsername(x);
+	 	else if(cmd[1] === "nickname") message.guild.member(bot.user).setNickname(x);
+	 	else if(cmd[1] === "status") bot.user.setStatus("online", x);
+	 	else if(cmd[1] === "defaultrole"){
+	 		jsonfile.readFile(settingspath, function(err, obj){
+	 			if(err) { msgChannel.sendMessage("`"+err+"`"); return; }
+	 			if(message.guild.roles.exists('name', x)){
+	 				obj[message.guild.id][0]["defaultrole"] = x;
+	 				obj[message.guild.id][0]["defaultrolestatus"] = "enabled";
+	 				jsonfile.writeFile(settingspath, obj, function(err){if(err)throw err;});
+	 				msgChannel.sendMessage("`Default role on this server set to: " + x +"`");
+	 			}
+	 			else msgChannel.sendMessage("`ERROR: No such role exists on this server!`");
+	 		});
 	 	}
-	 	catch(err){
-	 		msgChannel.sendMessage("`"+err+"`");
+	 	else if(cmd[1] === "greetmsg"){
+	 		jsonfile.readFile(settingspath, function(err, obj){
+	 			if(err) { msgChannel.sendMessage("`"+err+"`"); return; }
+ 				obj[message.guild.id][0]["greetmsg"] = x;
+ 				obj[message.guild.id][0]["greetch"] = message.channel.name;
+ 				obj[message.guild.id][0]["greetmsgstatus"] = "enabled";
+ 				jsonfile.writeFile(settingspath, obj, function(err){ if(err) msgChannel.sendMessage("`"+err+"`");});
+				msgChannel.sendMessage("`Greet message successfully set.`");
+
+	 		});
+	 	}
+	 	else if(cmd[1] === "greetpm"){
+	 		jsonfile.readFile(settingspath, function(err, obj){
+	 			if(err) { msgChannel.sendMessage("`"+err+"`"); return; }
+	 			obj[message.guild.id][0]["greetpm"] = x;
+	 			obj[message.guild.id][0]["greetpmstatus"] = "enabled";
+	 			jsonfile.writeFile(settingspath, obj, function(err){ if(err) msgChannel.sendMessage("`"+err+"`"); });
+	 			msgChannel.sendMessage("`Greet private message successfully set.`");
+	 		});
+	 	}
+	 	else if(cmd[1] === "logchannel"){
+	 		if(message.guild.channels.exists('name', x)){
+		 		jsonfile.readFile(settingspath, function(err, obj){
+		 			if(err){msgChannel.sendMessage("`"+err+"`"); return; }
+		 			obj[message.guild.id][0]["logchannel"] = x;
+		 			obj[message.guild.id][0]["logchannelstatus"] = "enabled";
+		 			jsonfile.writeFile(settingspath, obj, function(err) { if(err) msgChannel.sendMessage("`"+err+"`")});
+		 			msgChannel.sendMessage("`Logging new and exiting users in #"+x+"`");
+		 		})
+	 		}
+	 		else msgChannel.sendMessage("`That channel does not exist on this server, or I do not have access to that channel.`");
+	 	}
+	 	else{
+	 		msgChannel.sendMessage(":warning: You have entered a `set` command that I didn't recognize. Type `"+prefix+"help set` for usage information"); 
 	 	}
 	 }
 
@@ -373,10 +310,10 @@ bot.on('message', message =>{
 	 *
 	 */
 	 if(msg.startsWith(prefix+"toggle") && cmd.length > 1){
-	 	if(ownerId.indexOf(message.author.id) = -1){
-	 			msgChannel.sendMessage(":warning: `Sorry! You do not have permissions to do that. Please contact an adult.`");
-	 			return;
-	 	}
+	 	if(!message.guild.member(message.author).roles.exists('name', adminrole)){
+ 			msgChannel.sendMessage(":warning: Sorry! You must have the `"+adminrole+"` role to do that. Please contact an adult.");
+ 			return;
+ 		}
 		let x = msg.substring((prefix+"toggle "+cmd[1]+" ").length);
 		jsonfile.readFile(settingspath, function(err, obj){
 			if(err){msgChannel.sendMessage("`"+err+"`"); return; }
@@ -419,16 +356,16 @@ bot.on('message', message =>{
 	/* #get
 	 */
 	 if(msg.startsWith(prefix+"get") && cmd.length > 1){
-	 	if(ownerId.indexOf(message.author.id) == -1){
- 			msgChannel.sendMessage(":warning: `Sorry! You do not have permissions to do that. Please contact an adult.`");
+	 	if(!message.guild.member(message.author).roles.exists('name', adminrole)){
+ 			msgChannel.sendMessage(":warning: Sorry! You must have the `"+adminrole+"` role to do that. Please contact an adult.");
  			return;
-	 	}
+ 		}
 	 	let x = msg.substring((prefix+"toggle "+cmd[1]+" ").length);
 		jsonfile.readFile(settingspath, function(err, obj){
 			let info = obj[message.guild.id][0];
 			if(cmd[1] === 'greetmsg'){
 				if(info.hasOwnProperty('greetmsg')) 
-					msgChannel.sendMessage("The current greet message is set to: ```"+info.greetmsg+"``` and it is **"+ info.greetmsgstatus+"`**in channel #"+info.greetch);
+					msgChannel.sendMessage("The current greet message is set to: ```"+info.greetmsg+"``` and it is **"+ info.greetmsgstatus+"** in channel #"+info.greetch);
 				else 
 					msgChannel.sendMessage("`There is currently no greet message set. To set a greet message, type ["+ prefix + "set greetmsg <msg>] in the channel you wish to activate it in.`");
 			}
@@ -487,33 +424,35 @@ bot.on('message', message =>{
      * Bans a single tagged user from server if message author has ban permissions
      */
      if(msg.startsWith(prefix+"ban")){
-     	if(ownerId.indexOf(message.author.id) == -1){
-	 			msgChannel.sendMessage(":warning: `Sorry! You do not have permissions to do that. Please contact an adult.`");
-	 			return;
-	 	}
-     	let guildUser = message.guild.member(message.author); //creates a guild user of message author
-     	try{
-     		if(!message.guild.member(bot.user).permissions.hasPermission("BAN_MEMBERS")){
-     			msgChannel.sendMessage("`Error: I don't have the necessary permissions for that!`");
-     			return;
-     		}
-	     	if(guildUser.permissions.hasPermission("BAN_MEMBERS") && message.mentions.users.size === 1){
-	     		let reason = "";
-	     		if(msg.indexOf("--") != -1) reason = msg.substring(msg.indexOf("--")+2);
-	     		let user = message.guild.member(message.mentions.users.first());
-	     		user.ban();
-	     		if(reason.length != 0){
-	     			user.sendMessage("You were banned from **" + message.guild.name + "** for the following reason: \n" + "```"+reason+"```");
+     	if(message.guild.member(message.author).roles.exists('name', adminrole) || message.guild.member(bot.user).permissions.hasPermission("BAN_MEMBERS")){
+	     	let guildUser = message.guild.member(message.author); //creates a guild user of message author
+	     	try{
+	     		if(!message.guild.member(bot.user).permissions.hasPermission("BAN_MEMBERS")){
+	     			msgChannel.sendMessage("`Error: I don't have the necessary permissions for that!`");
+	     			return;
 	     		}
-	     		msgChannel.sendMessage("Banned <@" + user.id + ">");
+		     	if(guildUser.permissions.hasPermission("BAN_MEMBERS") && message.mentions.users.size === 1){
+		     		let reason = "";
+		     		if(msg.indexOf("--") != -1) reason = msg.substring(msg.indexOf("--")+2);
+		     		let user = message.guild.member(message.mentions.users.first());
+		     		user.ban();
+		     		if(reason.length != 0){
+		     			user.sendMessage("You were banned from **" + message.guild.name + "** for the following reason: \n" + "```"+reason+"```");
+		     		}
+		     		msgChannel.sendMessage("Banned <@" + user.id + ">");
+		     	}
+		     	else{
+		     		msgChannel.sendMessage(help["ban"]);
+		     	}
 	     	}
-	     	else{
-	     		msgChannel.sendMessage(help["ban"]);
+	     	catch(err){
+	     		msgChannel.sendMessage("`"+err+"`");
 	     	}
-     	}
-     	catch(err){
-     		msgChannel.sendMessage("`"+err+"`");
-     	}
+	    }
+	    else{
+	     	msgChannel.sendMessage(":warning: Sorry! You must have the `"+adminrole+"` role or Ban permissions to do that. Please contact an adult.");
+ 			return;
+ 		}
      }
 
     /* .kick
@@ -578,6 +517,7 @@ bot.on('message', message =>{
 	 }
 
 	 if(msg.includes("--del")){message.delete();}
+
  });
 
 bot.login(token);
