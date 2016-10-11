@@ -3,7 +3,9 @@ const Discord = require('discord.js');
 var fs = require('fs');
 var sys = require('util');
 var jsonfile = require('jsonfile');
-//create instance of a Discord Client
+
+
+//// GLOBAL VARIABLES /////
 const bot = new Discord.Client();
 const token = 'MjI1MzQ1NjYxNTkwMDQ0Njcy.CrntFw.jHDKx9Mj2ExBa6twSz7lywTu2-o';
 var prefix = "!";
@@ -15,21 +17,11 @@ const ignorepath = './etc/ignoreList.txt';
 const settingspath = './etc/server_settings.json';
 const ownerpath = './etc/ownerlist.txt';
 
+/////////////////////////////
+
 //dont touch these - they are initialized from the code. edit thru text file
 var ownerId = [];
 var ignoreList = [];
- 
-function queryEvents(){
-	var d = new Date();
-	let day = d.getDate();
-	let month = d.getMonth();
-	let hours = d.getHours();
-	let minutes = d.getMinutes();
-	jsonfile.readFile(settingspath, function(err, obj){
-		if(err) throw err;
-
-	})
-}
 
 
 bot.on('ready', () => {
@@ -70,7 +62,6 @@ bot.on('guildMemberRemove', (guild, member) => {
 	})
 });
 
-
 bot.on('guildCreate', (guild)=>{
 	jsonfile.readFile(settingspath, function(err, obj){
 		if(err) console.log(err);
@@ -78,7 +69,7 @@ bot.on('guildCreate', (guild)=>{
 		obj[guild.id].push({name: guild.name});
 		obj[guild.id][0]["ignoredUsers"] = [];
 	 	obj[guild.id][0]["ownerUsers"] = [];
-	 	obj[guild.id][9]["events"] = [];
+	 	obj[guild.id][0]["events"] = [];
 		jsonfile.writeFile(settingspath, obj, function(err){
 			if(err) console.log(err);
 		});
@@ -137,7 +128,7 @@ bot.on('message', message =>{
 	 		"```java",
 	 		"Noble Experiment#9092. Created by dev#4317",
 	 		"",
-	 		"I am being developed and worked on during spare time, so I may be limited in features. If you have any feature requests or bugs, please join my server.",
+	 		"This bot is specifically catered towards guild/clan management. If you have any feature suggestions or bugs, please join my server. :)",
 	 		"",
 	 		"Uptime: " +hours + " hr, " + minutes + " min, " + seconds + " sec",
 	 		"Servers: " + bot.guilds.size,
@@ -170,7 +161,7 @@ bot.on('message', message =>{
 	 * Deletes messages based on args
 	 */
 	 if(msg.startsWith(prefix+"delete")){
-	 	if(message.guild.member(message.author).roles.exists('name', adminrole) || message.guild.member(message.author).permissions.hasPermission("MANAGE_MESSAGES")){
+	 	if(message.guild.member(message.author).roles.exists('name', adminrole) || message.guild.member(message.author).permissions.hasPermission("MANAGE_MESSAGES") || message.author.id === devId){
 		 	if(cmd[1] === "contains"){
 		 		let x = msg.replace(""+prefix+"delete contains ", "");
 		 		message.channel.fetchMessages().then(messages=>{
@@ -469,12 +460,12 @@ bot.on('message', message =>{
 		     		if(reason.length != 0){
 		     			user.sendMessage("You were banned from **" + message.guild.name + "** for the following reason: \n" + "```"+reason+"```");
 		     			if(obj[message.guild.id][0].hasOwnProperty('logchannel') && obj[message.guild.id][0].logchannelstatus === "enabled"){
-							message.guild.channels.find('name', obj[message.guild.id][0].logchannel).sendMessage(":x: <@"+user.id+"> has been banned from the server by <@"+message.author.id+"> for the following reason: ```"+reason+"```");
+							message.guild.channels.find('name', obj[message.guild.id][0].logchannel).sendMessage(":no_entry_sign: <@"+user.id+"> has been banned from the server by <@"+message.author.id+"> for the following reason: ```"+reason+"```");
 						}
 		     		}
 		     		else{
 		     			if(obj[message.guild.id][0].hasOwnProperty('logchannel') && obj[message.guild.id][0].logchannelstatus === "enabled"){
-							message.guild.channels.find('name', obj[message.guild.id][0].logchannel).sendMessage(":x: <@"+user.id+"> has been banned from the server by <@"+message.author.id+">. No reason specified.");
+							message.guild.channels.find('name', obj[message.guild.id][0].logchannel).sendMessage(":no_entry_sign: <@"+user.id+"> has been banned from the server by <@"+message.author.id+">. No reason specified.");
 						}
 		     		}
 		     		msgChannel.sendMessage("Banned <@" + user.id + ">");
@@ -494,13 +485,13 @@ bot.on('message', message =>{
      * Kicks a single tagged user from server if message author has kick permissions
      */
      if(msg.startsWith(prefix+"kick")){
-     	if(message.guild.member(message.author).roles.exists('name', adminrole) || message.guild.member(bot.user).permissions.hasPermission("BAN_MEMBERS")){
+     	if(message.guild.member(message.author).roles.exists('name', adminrole) || message.guild.member(bot.user).permissions.hasPermission("KICK_MEMBERS") || message.author.id === devId){
 	     	let guildUser = message.guild.member(message.author); //creates a guild user of message author
 	 		if(!message.guild.member(bot.user).permissions.hasPermission("KICK_MEMBERS")){
 	 			msgChannel.sendMessage("`Error: I don't have the necessary permissions for that!`");
 	 			return;
 	 		}
-	     	if(guildUser.permissions.hasPermission("KICK_MEMBERS") && message.mentions.users.size === 1){
+	     	if(message.mentions.users.size === 1){
 	     		jsonfile.readFile(settingspath, function(err, obj){
 					if(err) throw err;
 		     		let reason = "";
@@ -510,12 +501,12 @@ bot.on('message', message =>{
 		     		if(reason.length != 0){
 		     			user.sendMessage("You were kicked from **" + message.guild.name + "** for the following reason: \n" + "```"+reason+"```");
 		     			if(obj[message.guild.id][0].hasOwnProperty('logchannel') && obj[message.guild.id][0].logchannelstatus === "enabled"){
-		     				message.guild.channels.find('name', obj[message.guild.id][0].logchannel).sendMessage(":x: <@"+user.id+"> has been kicked from the server by <@"+message.author.id+"> for the following reason: ```"+reason+"```");
+		     				message.guild.channels.find('name', obj[message.guild.id][0].logchannel).sendMessage(":no_entry_sign: <@"+user.id+"> has been kicked from the server by <@"+message.author.id+"> for the following reason: ```"+reason+"```");
 		     			}
 		     		}
 		     		else{
 		     			if(obj[message.guild.id][0].hasOwnProperty('logchannel') && obj[message.guild.id][0].logchannelstatus === "enabled"){
-		     				message.guild.channels.find('name', obj[message.guild.id][0].logchannel).sendMessage(":x: <@"+user.id+"> has been kicked from the server by <@"+message.author.id+">. No reason specified.");
+		     				message.guild.channels.find('name', obj[message.guild.id][0].logchannel).sendMessage(":no_entry_sign: <@"+user.id+"> has been kicked from the server by <@"+message.author.id+">. No reason specified.");
 		     			}
 		     		}
 		     		msgChannel.sendMessage("Kicked <@" + user.id + ">");
@@ -564,21 +555,52 @@ bot.on('message', message =>{
 		}
 	 }
 
-	 if(msg.includes("--del")){message.delete();}
 
-	/* #event
+	/* #assign
 	 */
-	 if(msg.startsWith(prefix+"event")){
-	 	msgChannel.sendMessage("<@"+message.mentions.roles.first().id+">");
-	 	msgChannel.sendMessage("<@"+message.mentions.users.first().id+">");
-	 	//sample events format: <month>&&<date>&&<hour>&&<minute>&&[mentions]&&<message>
-	 	jsonfile.readFile(settingspath, function(err, obj){
-	 		if(err) console.log(err);
-	 		let server = obj[message.guild.id][0];
-		 	let events = server.events;
-	 	});
+	 if(msg.startsWith(prefix+"assign")){
+	 	let usr = message.guild.member(message.author);
+	 	if(usr.roles.exists('name', adminrole) || usr.hasPermission("MANAGE_ROLES_OR_PERMISSIONS")){
+	 		let rolename = "";
+	 		for(var k in cmd){
+	 			if(cmd[k].includes("<@") || cmd[k].includes("assign")) continue;
+	 			else{
+	 				rolename = cmd[k];
+	 				break;
+	 			}
+	 		}
+	 		if(message.guild.roles.exists('name', rolename)){
+	 			message.mentions.users.forEach(function(entry){
+	 				message.guild.member(entry).addRole(message.guild.roles.find('name', rolename));
+	 			});
+	 		}
+	 		else{
+	 			msgChannel.sendMessage(":warning: The role `"+rolename+"` does not exist.");
+	 		}
+	 	}
+	 	else{
+	 		msgChannel.sendMessage(":warning: You do not have sufficient permissions to do that. Please contact an adult.");
+	 	}
 	 }
 
+	/* #prunemembers
+ 	 */
+ 	 if(msg.startsWith(prefix+"prunemembers")){
+ 	 	if(message.guild.member(message.author).roles.exists('name', adminrole)){
+ 	 		if(cmd[1] >= '14'){
+ 	 			message.guild.pruneMembers(cmd[1]);
+ 	 		}
+ 	 		else{
+ 	 			msgChannel.sendMessage(":warning: Prune members blocked because number of days was set below the safeguard.");
+ 	 		}
+ 	 	}
+ 	 	else{
+ 	 		msgChannel.sendMessage(":warning: You do not have sufficient permissions to do that. Please contact an adult.");
+ 	 	}
+ 	 }
+
+
+	if(msg.includes("--del")){message.delete();}
  });
 
 bot.login(token);
