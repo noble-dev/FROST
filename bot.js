@@ -16,6 +16,7 @@ const adminrole = "Bot Admin";
 const ignorepath = './etc/ignoreList.txt';
 const settingspath = './etc/server_settings.json';
 const ownerpath = './etc/ownerlist.txt';
+const guildspath = './etc/guilds.json';
 
 /////////////////////////////
 
@@ -599,6 +600,67 @@ bot.on('message', message =>{
  	 	}
  	 }
 
+ 	 if(msg.startsWith(prefix+"squads") || msg.startsWith(prefix+"squad")){
+ 	 	if(cmd[1] === "register"){
+ 	 		let name, tag = "";
+ 	 		if(cmd.length < 4) return; 
+ 	 		if(cmd[2].split('"').length === 3) tag = cmd[2].split('"')[1];
+ 	 		else tag = cmd[2];
+ 	 		if(tag.length > 5) { msgChannel.sendMessage(":warning: Squad TAG must be 5 characters or less."); return; }
+ 	 		let restmsg = message.content.substring(message.content.indexOf(cmd[2])+cmd[2].length +1);
+ 	 		if(restmsg.split('"').length === 3) name = restmsg.split('"')[1];
+ 	 		else name = cmd[3];
+ 	 		if(message.guild.member(message.author.id).roles.exists('name', 'Captain')){
+ 	 			jsonfile.readFile(guildspath, function(err, obj){
+ 	 				if(!obj.hasOwnProperty(message.author.id)){
+	 	 				if(err) console.log(err);
+	 	 				obj[message.author.id] = {};
+	 	 				obj[message.author.id].name = name;
+	 	 				obj[message.author.id].tag = tag;
+	 	 				message.guild.createChannel(tag+'-chat', 'text').then(channel =>{
+	 	 					channel.setTopic("Private Channel for " + name + " squad.");
+	 	 					channel.overwritePermissions(message.guild.roles.find('name', '@everyone'),{
+	 	 						READ_MESSAGES: false
+	 	 					});
+	 	 					message.guild.createRole({ name: name }).then(role => {
+	 	 						message.guild.member(message.author).addRole(role)
+	 	 						channel.overwritePermissions(message.guild.roles.find('name', name), {
+	 	 							READ_MESSAGES: true
+	 	 						});
+	 	 					});
+	 	 					channel.sendMessage("Hello "+message.author+". This is your private squad channel. Only your squad members (and the council) should have access to this channel. This is your domain. Your rules.\n **To add someone to your squad, manually add your squad role to the member.**");
+
+	 	 				});
+	 	 				jsonfile.writeFile(guildspath, obj, function(err){
+	 	 					if(err) console.log(err);
+	 	 					msgChannel.sendMessage(":white_check_mark: Successfully registered `"+tag+"` | `"+name+"` as <@"+message.author.id+">'s squad.");
+	 	 					message.delete();
+	 	 				});
+	 	 			}
+	 	 			else msgChannel.sendMessage(":warning: You have already registered your squad. To rename it, use the command `"+prefix+"squad rename <tag> <name>`");
+ 	 			});
+ 	 		}
+ 	 		else msgChannel.sendMessage(":warning: You must be a 'Captain' to register your squad.");
+ 	 	}
+ 	 	if(cmd[1] === 'list'){
+ 	 		jsonfile.readFile(guildspath, function(err, obj){
+ 	 			if(err) console.log(err);
+ 	 			let arr = Object.keys(obj);
+ 				let list = [];
+ 				function getname(key){
+ 					message.guild.fetchMember(arr[key]).then(usr=>{
+ 						if(usr.nickname != undefined) return usr.nickname;
+ 						else return usr.user.username;
+ 					});
+ 				}
+ 				for(key in arr){
+ 					list.push("`["+ obj[arr[key]].tag + "]`   `"+ obj[arr[key]].name + "`   |    Captain: " + getname(key) + "");
+ 				}
+ 				console.log(getname(0));
+ 				msgChannel.sendMessage(list);
+ 	 		});
+ 	 	}
+ 	 }
 
 	if(msg.includes("--del")){message.delete();}
  });
