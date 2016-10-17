@@ -10,13 +10,15 @@ const bot = new Discord.Client();
 const token = 'MjI1MzQ1NjYxNTkwMDQ0Njcy.CrntFw.jHDKx9Mj2ExBa6twSz7lywTu2-o';
 var prefix = "!";
 const devId = "133352797776248832"; // dev's id
-const adminrole = "Bot Admin";
+const superadminrole = 'Bot Admin';
+const officer_role = 'Captain';
+const admin_role = 'Council'
 
 //FILE PATHS
 const ignorepath = './etc/ignoreList.txt';
 const settingspath = './etc/server_settings.json';
 const ownerpath = './etc/ownerlist.txt';
-const guildspath = './etc/guilds.json';
+const squadspath = './etc/guilds.json';
 
 /////////////////////////////
 
@@ -95,8 +97,8 @@ bot.on('message', message =>{
 	  * initializes the json settings for the server command was issued from.
 	  */
 	 if(msg.startsWith(prefix+"init")){
-	 	if(!message.guild.member(message.author).roles.exists('name', adminrole)){
-	 			msgChannel.sendMessage(":warning: Sorry! You must have the `"+adminrole+"` role to do that. Please contact an adult.");
+	 	if(!message.guild.member(message.author).roles.exists('name', superadminrole)){
+	 			msgChannel.sendMessage(":warning: Sorry! You must have the `"+superadminrole+"` role to do that. Please contact an adult.");
 	 			return;
 	 	}
 	 	jsonfile.readFile(settingspath, function(err, obj){
@@ -119,7 +121,7 @@ bot.on('message', message =>{
 	/* #about
 	 *
 	 */
-	 if(msg.startsWith(prefix+"about")){
+	 if(msg === prefix+"about"){
 	 	let time = process.uptime();
 		let hours = Math.floor(time/3600);
 		time = time - hours*3600;
@@ -162,7 +164,7 @@ bot.on('message', message =>{
 	 * Deletes messages based on args
 	 */
 	 if(msg.startsWith(prefix+"delete")){
-	 	if(message.guild.member(message.author).roles.exists('name', adminrole) || message.guild.member(message.author).permissions.hasPermission("MANAGE_MESSAGES") || message.author.id === devId){
+	 	if(message.guild.member(message.author).roles.exists('name', superadminrole) || message.guild.member(message.author).permissions.hasPermission("MANAGE_MESSAGES") || message.author.id === devId){
 		 	if(cmd[1] === "contains"){
 		 		let x = msg.replace(""+prefix+"delete contains ", "");
 		 		message.channel.fetchMessages().then(messages=>{
@@ -191,7 +193,7 @@ bot.on('message', message =>{
 		 	}
 	 	}
 	 	else{
-	 		msgChannel.sendMessage(":warning: Sorry! You must have the `"+adminrole+"` role or `Manage Messages` permissions to do that. Please contact an adult.");
+	 		msgChannel.sendMessage(":warning: Sorry! You must have the `"+superadminrole+"` role or `Manage Messages` permissions to do that. Please contact an adult.");
 	 		return;
 	 	}
 	 }	 
@@ -260,7 +262,7 @@ bot.on('message', message =>{
 	 * various set functions
 	 */
 	 if(msg.startsWith(prefix+"set") && cmd.length > 2){
- 		if(message.guild.member(message.author).roles.exists('name', adminrole) || message.author.id === devId){
+ 		if(message.guild.member(message.author).roles.exists('name', superadminrole) || message.author.id === devId){
  			
 		 	let x = msg.substring((prefix+"set "+cmd[1]+" ").length);
 		 	if(cmd[1] === "username") bot.user.setUsername(x);
@@ -315,7 +317,7 @@ bot.on('message', message =>{
 		 	}
 	 	}
 	 	else{
-	 		msgChannel.sendMessage(":warning: Sorry! You must have the `"+adminrole+"` role to do that. Please contact an adult.");
+	 		msgChannel.sendMessage(":warning: Sorry! You must have the `"+superadminrole+"` role to do that. Please contact an adult.");
  			return;
  		}
 	 }
@@ -324,7 +326,7 @@ bot.on('message', message =>{
 	 *
 	 */
 	 if(msg.startsWith(prefix+"toggle") && cmd.length > 1){
-	 	if(message.guild.member(message.author).roles.exists('name', adminrole) || message.author.id === devId){
+	 	if(message.guild.member(message.author).roles.exists('name', superadminrole) || message.author.id === devId){
  		
 			let x = msg.substring((prefix+"toggle "+cmd[1]+" ").length);
 			jsonfile.readFile(settingspath, function(err, obj){
@@ -364,7 +366,7 @@ bot.on('message', message =>{
 			});
 		}
 		else{
-			msgChannel.sendMessage(":warning: Sorry! You must have the `"+adminrole+"` role to do that. Please contact an adult.");
+			msgChannel.sendMessage(":warning: Sorry! You must have the `"+superadminrole+"` role to do that. Please contact an adult.");
  			return;
  		}
 		
@@ -374,7 +376,7 @@ bot.on('message', message =>{
 	/* #get
 	 */
 	 if(msg.startsWith(prefix+"get") && cmd.length > 1){
-	 	if(message.guild.member(message.author).roles.exists('name', adminrole) || message.author.id === devId){
+	 	if(message.guild.member(message.author).roles.exists('name', superadminrole) || message.author.id === devId){
 
 		 	let x = msg.substring((prefix+"toggle "+cmd[1]+" ").length);
 			jsonfile.readFile(settingspath, function(err, obj){
@@ -421,7 +423,7 @@ bot.on('message', message =>{
 			});	
 		}
 		else{
-			msgChannel.sendMessage(":warning: Sorry! You must have the `"+adminrole+"` role to do that. Please contact an adult.");
+			msgChannel.sendMessage(":warning: Sorry! You must have the `"+superadminrole+"` role to do that. Please contact an adult.");
  			return;
  		}
 	 }
@@ -445,7 +447,7 @@ bot.on('message', message =>{
      * Bans a single tagged user from server if message author has ban permissions
      */
      if(msg.startsWith(prefix+"ban")){
-     	if(message.guild.member(message.author).roles.exists('name', adminrole) || message.guild.member(bot.user).permissions.hasPermission("BAN_MEMBERS")){
+     	if(message.guild.member(message.author).roles.exists('name', superadminrole) || message.guild.member(bot.user).permissions.hasPermission("BAN_MEMBERS")){
 	     	let guildUser = message.guild.member(message.author); //creates a guild user of message author
      		if(!message.guild.member(bot.user).permissions.hasPermission("BAN_MEMBERS")){
      			msgChannel.sendMessage("`Error: I don't have the necessary permissions for that!`");
@@ -477,7 +479,7 @@ bot.on('message', message =>{
 	     	}
 	    }
 	    else{
-	     	msgChannel.sendMessage(":warning: Sorry! You must have the `"+adminrole+"` role or Ban permissions to do that. Please contact an adult.");
+	     	msgChannel.sendMessage(":warning: Sorry! You must have the `"+superadminrole+"` role or Ban permissions to do that. Please contact an adult.");
  			return;
  		}
      }
@@ -486,7 +488,7 @@ bot.on('message', message =>{
      * Kicks a single tagged user from server if message author has kick permissions
      */
      if(msg.startsWith(prefix+"kick")){
-     	if(message.guild.member(message.author).roles.exists('name', adminrole) || message.guild.member(bot.user).permissions.hasPermission("KICK_MEMBERS") || message.author.id === devId){
+     	if(message.guild.member(message.author).roles.exists('name', superadminrole) || message.guild.member(bot.user).permissions.hasPermission("KICK_MEMBERS") || message.author.id === devId){
 	     	let guildUser = message.guild.member(message.author); //creates a guild user of message author
 	 		if(!message.guild.member(bot.user).permissions.hasPermission("KICK_MEMBERS")){
 	 			msgChannel.sendMessage("`Error: I don't have the necessary permissions for that!`");
@@ -518,7 +520,7 @@ bot.on('message', message =>{
 	     	}
 	    }
      	else{
-	     	msgChannel.sendMessage(":warning: Sorry! You must have the `"+adminrole+"` role or Ban permissions to do that. Please contact an adult.");
+	     	msgChannel.sendMessage(":warning: Sorry! You must have the `"+superadminrole+"` role or Ban permissions to do that. Please contact an adult.");
  			return;
  		}
      }
@@ -561,7 +563,7 @@ bot.on('message', message =>{
 	 */
 	 if(msg.startsWith(prefix+"assign")){
 	 	let usr = message.guild.member(message.author);
-	 	if(usr.roles.exists('name', adminrole) || usr.hasPermission("MANAGE_ROLES_OR_PERMISSIONS")){
+	 	if(usr.roles.exists('name', superadminrole) || usr.hasPermission("MANAGE_ROLES_OR_PERMISSIONS")){
 	 		let rolename = "";
 	 		for(var k in cmd){
 	 			if(cmd[k].includes("<@") || cmd[k].includes("assign")) continue;
@@ -587,7 +589,7 @@ bot.on('message', message =>{
 	/* #prunemembers
  	 */
  	 if(msg.startsWith(prefix+"prunemembers")){
- 	 	if(message.guild.member(message.author).roles.exists('name', adminrole)){
+ 	 	if(message.guild.member(message.author).roles.exists('name', superadminrole)){
  	 		if(cmd[1] >= '14'){
  	 			message.guild.pruneMembers(cmd[1]);
  	 		}
@@ -599,66 +601,203 @@ bot.on('message', message =>{
  	 		msgChannel.sendMessage(":warning: You do not have sufficient permissions to do that. Please contact an adult.");
  	 	}
  	 }
-
- 	 if(msg.startsWith(prefix+"squads") || msg.startsWith(prefix+"squad")){
- 	 	if(cmd[1] === "register"){
- 	 		let name, tag = "";
- 	 		if(cmd.length < 4) return; 
- 	 		if(cmd[2].split('"').length === 3) tag = cmd[2].split('"')[1];
- 	 		else tag = cmd[2];
- 	 		if(tag.length > 5) { msgChannel.sendMessage(":warning: Squad TAG must be 5 characters or less."); return; }
+ 	 /* #squad
+ 	 */
+ 	 if(msg.startsWith(prefix+"sq") && message.guild.id === '144729397826420736'){
+ 	 	if(cmd[1] === "register" || cmd[1] === "reg"){
+ 	 		//If improper permissions
+ 	 		if(!message.guild.member(message.author.id).roles.exists('name', officer_role)){ 
+ 	 			msgChannel.sendMessage(':warning: You do not have permissions to do that. Please contact an adult.'); 
+ 	 			return;
+ 	 		}
+ 	 		//If improper parameters
+ 	 		if(cmd.length < 4){
+ 	 			msgChannel.sendMessage(':warning: You need to specify both a **tag** and **name**. \n For example) `'+prefix+'squads register ABC Alphabet`'); 
+ 	 			return; 
+ 	 		}
+ 	 		//Strip cmd[2] of wrap
+ 	 		if(cmd[2].includes('"') || cmd[2].includes('[') || cmd[2].includes("'") || cmd[2].includes("<")) var tag = cmd[2].substring(1, cmd[2].length-1);
+ 	 		else var tag = cmd[2];
+ 	 		//Check tag length
+ 	 		if(tag.length > 5) { 
+ 	 			msgChannel.sendMessage(":warning: Squad TAG must be 5 characters or less."); 
+ 	 			return; 
+ 	 		}
  	 		let restmsg = message.content.substring(message.content.indexOf(cmd[2])+cmd[2].length +1);
- 	 		if(restmsg.split('"').length === 3) name = restmsg.split('"')[1];
- 	 		else name = cmd[3];
- 	 		if(message.guild.member(message.author.id).roles.exists('name', 'Captain')){
- 	 			jsonfile.readFile(guildspath, function(err, obj){
- 	 				if(!obj.hasOwnProperty(message.author.id)){
-	 	 				if(err) console.log(err);
-	 	 				obj[message.author.id] = {};
-	 	 				obj[message.author.id].name = name;
-	 	 				obj[message.author.id].tag = tag;
-	 	 				message.guild.createChannel(tag+'-chat', 'text').then(channel =>{
-	 	 					channel.setTopic("Private Channel for " + name + " squad.");
-	 	 					channel.overwritePermissions(message.guild.roles.find('name', '@everyone'),{
-	 	 						READ_MESSAGES: false
-	 	 					});
-	 	 					message.guild.createRole({ name: name }).then(role => {
-	 	 						message.guild.member(message.author).addRole(role)
-	 	 						channel.overwritePermissions(message.guild.roles.find('name', name), {
-	 	 							READ_MESSAGES: true
-	 	 						});
-	 	 					});
-	 	 					channel.sendMessage("Hello "+message.author+". This is your private squad channel. Only your squad members (and the council) should have access to this channel. This is your domain. Your rules.\n **To add someone to your squad, manually add your squad role to the member.**");
-
-	 	 				});
-	 	 				jsonfile.writeFile(guildspath, obj, function(err){
-	 	 					if(err) console.log(err);
-	 	 					msgChannel.sendMessage(":white_check_mark: Successfully registered `"+tag+"` | `"+name+"` as <@"+message.author.id+">'s squad.");
-	 	 					message.delete();
-	 	 				});
-	 	 			}
-	 	 			else msgChannel.sendMessage(":warning: You have already registered your squad. To rename it, use the command `"+prefix+"squad rename <tag> <name>`");
+ 	 		if(restmsg.includes('"') || restmsg.includes('[') || restmsg.includes('<')) var name = restmsg.substring(1, restsmsg.length-1);
+ 	 		else var name = restmsg;
+ 	 			
+ 	 		jsonfile.readFile(squadspath, function(err, obj){
+ 				if(!obj.hasOwnProperty(message.author.id)){
+	 				if(err) console.log(err);
+	 				obj[message.author.id] = {};
+	 				obj[message.author.id].name = name;
+	 				obj[message.author.id].tag = tag;
+	 				obj[message.author.id].captainId = message.author.id;
+	 				message.guild.createChannel(tag+'-chat', 'text').then(channel =>{
+	 					channel.setTopic("Private Channel for " + name + " squad members.");
+	 					channel.overwritePermissions(message.guild.roles.find('name', '@everyone'),{
+	 						READ_MESSAGES: false
+	 					});
+	 					message.guild.createRole({ name: name, mentionable: true }).then(role => {
+	 						message.guild.member(message.author).addRole(role)
+	 						channel.overwritePermissions(message.guild.roles.find('name', name), {
+	 							READ_MESSAGES: true
+	 						});
+	 					});
+	 					msgChannel.sendMessage(':clock3: Setting up channel and permissions...').then(message=> message.delete(2000));
+	 					setTimeout(function(){
+	 						jsonfile.writeFile(squadspath, obj, function(err){
+	 							if(err) console.log(err);
+	 							msgChannel.sendMessage(":white_check_mark: Successfully registered `"+tag+"` | `"+name+"` as <@"+message.author.id+">'s squad.");
+	 							message.delete();
+	 						})
+	 						channel.sendMessage("Hello "+message.author+". This is your private squad channel. Only your squad members (and the council) should have access to this channel. This is your domain. Your rules.\n **To add someone to your squad, type `"+prefix+"squad invite @user(s)` in any text channel.**");
+	 					}, 2000);
+	 				});
+	 			}
+	 			else msgChannel.sendMessage(":warning: You have already registered your squad. To rename it, use the command `"+prefix+"squad rename <tag> <name>`");
+ 			});
+ 	 	}
+ 	 	else if(cmd[1] === 'rename'){
+ 	 		if(message.guild.member(message.author.id).roles.exists('name', officer_role)){
+ 	 			jsonfile.readFile(squadspath, function(err, obj){
+ 	 				if(err) console.log(err);
+ 	 				if(obj.hasOwnProperty(message.author.id)){
+ 	 					if(cmd[2].includes('"') || cmd[2].includes('[') || cmd[2].includes("'") || cmd[2].includes("<")) var tag = cmd[2].substring(1, cmd[2].length-1);
+			 	 		else var tag = cmd[2];
+			 	 		//Check tag length
+			 	 		if(tag.length > 5) { 
+			 	 			msgChannel.sendMessage(":warning: Squad TAG must be 5 characters or less."); 
+			 	 			return; 
+			 	 		}
+			 	 		let restmsg = message.content.substring(message.content.indexOf(cmd[2])+cmd[2].length +1);
+			 	 		if(restmsg.includes('"') || restmsg.includes('[') || restmsg.includes('<')) var name = restmsg.substring(1, restsmsg.length-1);
+			 	 		else var name = restmsg;
+			 	 		var before_name = obj[message.author.id].name;
+			 	 		var before_tag = obj[message.author.id].tag;
+			 	 		message.guild.roles.find('name', before_name).setName(name);
+			 	 		message.guild.channels.find('name', before_tag.toLowerCase()+'-chat').setName(tag.toLowerCase()+'-chat').then(channel=>channel.setTopic('Private channel for '+name+' squad members.'));
+			 	 		obj[message.author.id].tag = tag;
+			 	 		obj[message.author.id].name = name;
+			 	 		jsonfile.writeFile(squadspath, obj, function(err){
+			 	 			if(err) console.log(err);
+			 	 			msgChannel.sendMessage(':white_check_mark: Successfully renamed <@'+message.author.id+">'s squad to `["+tag+"] "+name+"`");
+			 	 		});
+ 	 				}
+ 	 				else{
+ 	 					msgChannel.sendMessage(':warning: You do not have a squad registered under your name yet.');
+ 	 				}
  	 			});
  	 		}
- 	 		else msgChannel.sendMessage(":warning: You must be a 'Captain' to register your squad.");
  	 	}
- 	 	if(cmd[1] === 'list'){
- 	 		jsonfile.readFile(guildspath, function(err, obj){
+ 	 	else if(cmd[1] === "delete"){
+ 	 		var deleted = false;
+ 	 		if(message.guild.member(message.author.id).roles.exists('name', superadminrole) || message.guild.member(message.author.id).roles.exists('name', admin_role)){
+ 	 			if(cmd.length < 3){
+ 	 				msgChannel.sendMessage(':warning: Please specify a squad by their *tag* or *name* or *@captain* to delete them.')
+ 	 				return;
+ 	 			}
+ 	 			
+ 	 			jsonfile.readFile(squadspath, function(err, obj){
+ 	 				if(err) console.log(err);
+ 	 				var squad = msg.substring(msg.indexOf('delete')+7);
+ 	 				if(message.mentions.users.size > 0) squad = message.mentions.users.first().id;
+ 	 				else if(cmd[2].includes('"') || cmd[2].includes('[') || cmd[2].includes("<")) var squad = cmd[2].substring(1, cmd[2].length-1).toLowerCase();
+ 					for(key in obj){
+ 						if(obj[key].name.toLowerCase() === squad || obj[key].tag.toLowerCase() === squad || obj[key].captainId === squad){
+ 							var deleted_squad_name = obj[key].name;
+ 							deleted = true;
+ 							let tag = obj[key].tag.toLowerCase();
+ 							if(message.guild.channels.exists('name', tag+'-chat')) message.guild.channels.find('name', tag+'-chat').delete();
+ 							if(message.guild.roles.exists('name', obj[key].name)) message.guild.roles.find('name', obj[key].name).delete();
+ 							delete obj[key];
+ 						}
+ 					}
+ 	 				if(deleted){
+	 	 				jsonfile.writeFile(squadspath, obj, function(err){
+	 	 					if(err) console.log(err);
+	 	 					msgChannel.sendMessage(':white_check_mark: Successfully deleted `'+deleted_squad_name+'` squad from guild database.');
+	 	 				});
+ 	 				}
+ 	 				else msgChannel.sendMessage(':warning: Unable to locate a squad associated with input parameter: `'+squad+'`\nPlease find associated squad *name*, *tag*, or *captain* using `'+prefix+'squad list`');
+ 	 			});
+ 	 		}
+ 	 		else if(message.guild.member(message.author.id).roles.exists('name', officer_role)){
+ 	 			msgChannel.sendMessage(':warning: Only council members can delete squads.');
+ 	 			return;
+ 	 		}
+ 	 		else{
+ 	 			msgChannel.sendMessage(':warning: You do not have permissions to do that. Please contact an adult.');
+ 	 			return;
+ 	 		}
+
+ 	 	}
+ 	 	else if(cmd[1] === 'list'){
+ 	 		jsonfile.readFile(squadspath, function(err, obj){
  	 			if(err) console.log(err);
  	 			let arr = Object.keys(obj);
  				let list = [];
- 				function getname(key){
- 					message.guild.fetchMember(arr[key]).then(usr=>{
- 						if(usr.nickname != undefined) return usr.nickname;
- 						else return usr.user.username;
- 					});
- 				}
- 				for(key in arr){
- 					list.push("`["+ obj[arr[key]].tag + "]`   `"+ obj[arr[key]].name + "`   |    Captain: " + getname(key) + "");
- 				}
- 				console.log(getname(0));
- 				msgChannel.sendMessage(list);
+ 				var tag_spaces;
+ 				/*if(cmd.length > 2){
+ 					var id = '';
+ 					if(cmd[2].includes('@!')) var id = cmd[2].substring(2);
+					for(key in obj){
+						if(obj[key].name.toLowerCase() === cmd[2].toLowerCase() || obj[key].tag.toLowerCase() === cmd[2].toLowerCase() || obj[key].captainId === id){
+							var memberslist = [];
+							memberslist.push('Listing all members belonging to `['+obj[key].tag+']` `'+ obj[key].name+'` squad: ');
+							var squadmembers = message.guild.members.filter(function(entry){if(message.guild.member(entry).roles.exists('name', obj[key].name)) return true;}).array();
+							memberslist.push(obj[key].captainId + ' - *(Captain)*');
+							for(n in squadmembers){
+								if(squadmembers[n].nickname != undefined) memberslist.push(squadmembers[n].nickname);
+								else memberslist.push(squadmembers[n].user.username;
+							}
+							msgChannel.sendMessage(memberslist);
+							return;
+						}
+					}
+				}*/
+ 				list.push('**Squad Index**');
+				for(key in arr){
+					var captain_user = message.guild.member(arr[key]);
+					var display_name;
+					if(captain_user.nickname != undefined) display_name = captain_user.nickname;
+					else display_name = captain_user.user.username;
+					tag_spaces = '        ';
+					tag_spaces = tag_spaces.substring(0, 9 - obj[arr[key]].tag.length);
+					list.push("`["+ obj[arr[key]].tag + "]`"+tag_spaces+"`"+ obj[arr[key]].name + "`   |    Captain: " + display_name + "");
+				}
+				msgChannel.sendMessage(list);
  	 		});
+ 	 	}
+ 	 	else if(cmd[1] === 'invite'){
+ 	 		if(message.mentions.users.size === 0 || !message.guild.member(message.author.id).roles.exists('name', officer_role)){
+ 	 			msgChannel.sendMessage(':warning: You do not have permission to do that.');
+ 	 			return;
+ 	 		}
+ 	 		jsonfile.readFile(squadspath, function(err, obj){
+ 	 			if(err) console.log(err);
+ 	 			if(obj.hasOwnProperty(message.author.id)){
+ 	 				if(message.guild.members.filter(function(entry){
+ 	 					return entry.roles.exists('name', obj[message.author.id].name)	
+ 	 				}).size  >= 15){
+ 	 					msgChannel.sendMessage(':warning: `'+obj[message.author.id].name+'` squad is at maximum capacity! (Max: 15 members). Cannot add.');
+ 	 					return;
+ 	 				}
+	 	 			var invitees = message.mentions.users.array();
+		 	 		for(key in invitees){
+		 	 			message.guild.member(invitees[key]).addRole(message.guild.roles.find('name', obj[message.author.id].name)).then(member=>{
+		 	 				message.guild.channels.find('name', obj[message.author.id].tag.toLowerCase()+'-chat').sendMessage('Welcome to the squad, <@'+member.id+'>!');
+		 	 			});
+		 	 		}
+	 	 		}
+	 	 		else{
+	 	 			msgChannel.sendMessage(':warning: You do not have a squad registered under your name yet.');
+	 	 		}
+ 	 		});	
+ 	 	}
+ 	 	else if(cmd[1] === 'setreq'){
+ 	 	
  	 	}
  	 }
 
