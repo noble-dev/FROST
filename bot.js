@@ -604,7 +604,7 @@ bot.on('message', message =>{
 
  	 // #approve
  	 if(msg.startsWith(prefix+"approve")){
- 	 	if(!message.guild.member(message.author).roles.exists('name', officer_role)){
+ 	 	if(!message.guild.member(message.author).roles.exists('name', officer_role) || !message.guild.member(message.author).roles.exists('name', admin_role)){
  	 		msgChannel.sendMessage(':warning: You do not have permissions to do that.');
  	 		return;
  	 	}
@@ -831,6 +831,7 @@ bot.on('message', message =>{
 		 	 			if(!issquad){
 		 	 				message.guild.member(invitees[key]).addRole(message.guild.roles.find('name', obj[message.author.id].name)).then(member=>{
 		 	 					message.guild.channels.find('name', obj[message.author.id].tag.toLowerCase()+'-chat').sendMessage('Welcome to the squad, <@'+member.id+'>!');
+		 	 					msgChannel.sendMessage(':white_check_mark: Successfully added '+member.user.username+' to your squad.');
 		 	 				});
 		 	 			}
 		 	 			else{
@@ -950,6 +951,9 @@ bot.on('message', message =>{
  	 				}
  	 				list.push('**Requirements to join:**  ```'+obj[target].requirements+'```');
  	 				msgChannel.sendMessage(list);
+ 	 			}
+ 	 			else{
+ 	 				msgChannel.sendMessage(':warning: Unable to find the squad associated with the keyword: '+target);
  	 			}
  	 		});
  	 	}
