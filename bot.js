@@ -531,7 +531,7 @@ bot.on('message', message =>{
 	 if(msg.startsWith(prefix+"info")){
 		//if no mentions
 		if(message.mentions.users.size == 0 || message.mentions.users.size > 1){
-			msgChannel.sendMessage(help["info"]);
+			//msgChannel.sendMessage(help["info"]);
 			return;
 		}
 		//idea for tags - splice them out into a different array and send that
@@ -601,7 +601,38 @@ bot.on('message', message =>{
  	 		msgChannel.sendMessage(":warning: You do not have sufficient permissions to do that. Please contact an adult.");
  	 	}
  	 }
- 	 /* #squad
+
+ 	 // #approve
+ 	 if(msg.startsWith(prefix+"approve")){
+ 	 	if(!message.guild.member(message.author).roles.exists('name', officer_role)){
+ 	 		msgChannel.sendMessage(':warning: You do not have permissions to do that.');
+ 	 		return;
+ 	 	}
+ 	 	if(message.mentions.users.size === 0 ){
+ 	 		msgChannel.sendMessage(':warning: You did not mention anyone.');
+ 	 		return;
+ 	 	}
+ 	 	var usrs = message.mentions.users.array();
+ 	 	jsonfile.readFile(settingspath, function(err, obj){
+ 	 		if(err) console.log(err);
+	 	 	for(key in usrs){
+	 	 		if(message.guild.member(usrs[key]).roles.exists('name', 'Member')){
+	 	 			msgChannel.sendMessage(':warning: <@'+usrs[key].id+'> is already a member.');
+	 	 			return;
+	 	 		}
+	 	 		else{
+ 					message.guild.member(usrs[key]).addRole(message.guild.roles.find('name', 'Member')).then(usr=>{
+ 						if(message.guild.member(usrs[key]).roles.exists('name', 'Guest')) message.guild.member(usrs[key]).removeRole(message.guild.roles.find('name', 'Guest'));
+ 					});
+					if(obj[message.guild.id][0].hasOwnProperty('logchannel') && obj[message.guild.id][0].logchannelstatus === "enabled"){
+ 							message.guild.channels.find('name', obj[message.guild.id][0].logchannel).sendMessage(":white_check_mark: <@"+message.author.id+"> has approved <@"+usrs[key].id+"> application to join the guild.");
+ 					}
+	 	 		}
+	 	 	}
+	 	 });
+
+ 	 }
+ 	/* #squad
  	 */
  	 if(msg.startsWith(prefix+"sq") && message.guild.id === '144729397826420736'){
  	 	if(cmd[1] === "register" || cmd[1] === "reg"){
@@ -626,7 +657,10 @@ bot.on('message', message =>{
  	 		let restmsg = message.content.substring(message.content.indexOf(cmd[2])+cmd[2].length +1);
  	 		if(restmsg.includes('"') || restmsg.includes('[') || restmsg.includes('<')) var name = restmsg.substring(1, restsmsg.length-1);
  	 		else var name = restmsg;
- 	 			
+			if(name.length > 15){
+				msgChannel.sendMessage(':warning: Squad NAME must be 15 characters or less.');
+				return;
+			} 	 			
  	 		jsonfile.readFile(squadspath, function(err, obj){
  				if(!obj.hasOwnProperty(message.author.id)){
 	 				if(err) console.log(err);
@@ -634,6 +668,8 @@ bot.on('message', message =>{
 	 				obj[message.author.id].name = name;
 	 				obj[message.author.id].tag = tag;
 	 				obj[message.author.id].captainId = message.author.id;
+	 				obj[message.author.id].members = [];
+	 				obj[message.author.id].points = 0;
 	 				message.guild.createChannel(tag+'-chat', 'text').then(channel =>{
 	 					channel.setTopic("Private Channel for " + name + " squad members.");
 	 					channel.overwritePermissions(message.guild.roles.find('name', '@everyone'),{
@@ -738,57 +774,68 @@ bot.on('message', message =>{
  	 			if(err) console.log(err);
  	 			let arr = Object.keys(obj);
  				let list = [];
- 				var tag_spaces;
- 				/*if(cmd.length > 2){
- 					var id = '';
- 					if(cmd[2].includes('@!')) var id = cmd[2].substring(2);
-					for(key in obj){
-						if(obj[key].name.toLowerCase() === cmd[2].toLowerCase() || obj[key].tag.toLowerCase() === cmd[2].toLowerCase() || obj[key].captainId === id){
-							var memberslist = [];
-							memberslist.push('Listing all members belonging to `['+obj[key].tag+']` `'+ obj[key].name+'` squad: ');
-							var squadmembers = message.guild.members.filter(function(entry){if(message.guild.member(entry).roles.exists('name', obj[key].name)) return true;}).array();
-							memberslist.push(obj[key].captainId + ' - *(Captain)*');
-							for(n in squadmembers){
-								if(squadmembers[n].nickname != undefined) memberslist.push(squadmembers[n].nickname);
-								else memberslist.push(squadmembers[n].user.username;
-							}
-							msgChannel.sendMessage(memberslist);
-							return;
-						}
-					}
-				}*/
- 				list.push('**Squad Index**');
+ 				var tag_spaces, name_spaces, captain_spaces, points_spaces;
+ 				list.push(' **TAG**            **NAME**                             **CAPTAIN**                   **FOCUS**');
 				for(key in arr){
 					var captain_user = message.guild.member(arr[key]);
 					var display_name;
 					if(captain_user.nickname != undefined) display_name = captain_user.nickname;
 					else display_name = captain_user.user.username;
-					tag_spaces = '        ';
-					tag_spaces = tag_spaces.substring(0, 9 - obj[arr[key]].tag.length);
-					list.push("`["+ obj[arr[key]].tag + "]`"+tag_spaces+"`"+ obj[arr[key]].name + "`   |    Captain: " + display_name + "");
+					tag_spaces = '      ';
+					tag_spaces = tag_spaces.substring(0, 7 - obj[arr[key]].tag.length);
+					name_spaces = '                ';
+					name_spaces = name_spaces.substring(0, 17-obj[arr[key]].name.length);
+					captain_spaces = '              ';
+					captain_spaces = captain_spaces.substring(0, 15-display_name.length);
+					list.push("`["+obj[arr[key]].tag+"]"+tag_spaces+obj[arr[key]].name+name_spaces+" @"+display_name+captain_spaces+" "+obj[arr[key]].focus+"`");
 				}
+				//list.push('\n*If you are interested in joining a squad, type:* `'+prefix+'squad join [tag|name|@captain]`');
 				msgChannel.sendMessage(list);
  	 		});
  	 	}
  	 	else if(cmd[1] === 'invite'){
- 	 		if(message.mentions.users.size === 0 || !message.guild.member(message.author.id).roles.exists('name', officer_role)){
+ 	 		if(!message.guild.member(message.author.id).roles.exists('name', officer_role)){
  	 			msgChannel.sendMessage(':warning: You do not have permission to do that.');
+ 	 			return;
+ 	 		}
+ 	 		if(message.mentions.users.size === 0){
+ 	 			msgChannel.sendMessage(':warning: You did not tag anyone to invite.');
  	 			return;
  	 		}
  	 		jsonfile.readFile(squadspath, function(err, obj){
  	 			if(err) console.log(err);
+ 	 			var listofsquads = Object.keys(obj);
  	 			if(obj.hasOwnProperty(message.author.id)){
- 	 				if(message.guild.members.filter(function(entry){
- 	 					return entry.roles.exists('name', obj[message.author.id].name)	
- 	 				}).size  >= 15){
+ 	 				var squadsize = message.guild.members.filter(function(entry){
+ 	 					return entry.roles.exists('name', obj[message.author.id].name);
+ 	 				}).size;
+ 	 				var toinvite = message.mentions.users.size;
+ 	 				if(squadsize >= 15){
  	 					msgChannel.sendMessage(':warning: `'+obj[message.author.id].name+'` squad is at maximum capacity! (Max: 15 members). Cannot add.');
+ 	 					return;
+ 	 				}
+ 	 				else if((squadsize + toinvite) > 15){
+ 	 					msgChannel.sendMessage(':warning: `'+obj[message.author.id].name+'` squad is currently at **'+squadsize+'** members. Cannot add **'+toinvite+'** members.');
  	 					return;
  	 				}
 	 	 			var invitees = message.mentions.users.array();
 		 	 		for(key in invitees){
-		 	 			message.guild.member(invitees[key]).addRole(message.guild.roles.find('name', obj[message.author.id].name)).then(member=>{
-		 	 				message.guild.channels.find('name', obj[message.author.id].tag.toLowerCase()+'-chat').sendMessage('Welcome to the squad, <@'+member.id+'>!');
-		 	 			});
+		 	 			let issquad = false;
+		 	 			let squadname = '';
+		 	 			for(names in listofsquads){
+		 	 				if(message.guild.member(invitees[key]).roles.exists('name', obj[listofsquads[names]].name)){
+		 	 					issquad = true;
+		 	 					squadname = obj[listofsquads[names]].name;
+		 	 				}
+		 	 			}
+		 	 			if(!issquad){
+		 	 				message.guild.member(invitees[key]).addRole(message.guild.roles.find('name', obj[message.author.id].name)).then(member=>{
+		 	 					message.guild.channels.find('name', obj[message.author.id].tag.toLowerCase()+'-chat').sendMessage('Welcome to the squad, <@'+member.id+'>!');
+		 	 				});
+		 	 			}
+		 	 			else{
+		 	 				msgChannel.sendMessage(':warning: <@'+invitees[key].id+'> is already a member of `'+squadname+'` squad. Unable to add.');
+		 	 			}
 		 	 		}
 	 	 		}
 	 	 		else{
@@ -796,8 +843,155 @@ bot.on('message', message =>{
 	 	 		}
  	 		});	
  	 	}
- 	 	else if(cmd[1] === 'setreq'){
- 	 	
+ 	 	else if(cmd[1] === 'setfocus'){
+ 	 		if(!message.guild.member(message.author.id).roles.exists('name', officer_role)){
+ 	 			msgChannel.sendMessage(':warning: You do not have permission to do that.');
+ 	 			return;
+ 	 		}
+ 	 		jsonfile.readFile(squadspath, function(err, obj){
+ 	 			if(err) console.log(err);
+ 	 			if(obj.hasOwnProperty(message.author.id)){
+ 	 				let restmsg = message.content.substring(message.content.indexOf(cmd[1])+cmd[1].length +1);
+ 	 				if(restmsg.startsWith('"')) restmsg = restmsg.substring(1, restmsg.length-1);
+ 	 				if(restmsg.length <= 25){
+ 	 					obj[message.author.id].focus = restmsg;
+ 	 					jsonfile.writeFile(squadspath, obj, function(err){
+ 							if(err) console.log(err);
+ 							msgChannel.sendMessage(':white_check_mark: Successfully set the focus of `'+obj[message.author.id].name+"` squad to `"+obj[message.author.id].focus+"`");
+ 	 					});
+ 	 					return;
+ 	 				}
+ 	 				else{
+ 	 					msgChannel.sendMessage(':warning: Your focus is too long. Please keep it to 25 characters or less.');
+ 	 					return;
+ 	 				}
+ 	 			}
+ 	 			else{
+ 	 				msgChannel.sendMessage(':warning: You do not have a squad registered under your name yet.');
+ 	 			}
+ 	 		});
+ 	 	}
+ 	 	else if(cmd[1].startsWith('setreq')){
+ 	 		if(!message.guild.member(message.author.id).roles.exists('name', officer_role)){
+ 	 			msgChannel.sendMessage(':warning: YOu do not have permissions to do that.');
+ 	 			return;
+ 	 		}
+ 	 		jsonfile.readFile(squadspath, function(err, obj){
+ 	 			if(err) console.log(err);
+ 	 			let restmsg = message.content.substring(message.content.indexOf("setreq")+6);
+ 	 			if(restmsg.startsWith('"')) restmsg = restmsg.substring(1, restmsg.length-1);
+ 	 			obj[message.author.id].requirements = restmsg;
+ 	 			jsonfile.writeFile(squadspath, obj, function(err){
+ 					if(err) console.log(err);
+ 					msgChannel.sendMessage(':white_check_mark: Successfully set the requirements of `'+obj[message.author.id].name+"` squad.");
+ 	 			});
+
+ 	 		});
+ 	 	}
+ 	 	else if(cmd[1] === 'getreq'){
+ 	 		var squad = message.content.substring(message.content.indexOf('getreq')+7);
+ 	 		if(cmd[2].startsWith('"') || cmd[2].startsWith('[') || cmd[2].startsWith("'") || cmd[2].startsWith("<")) squad = squad.substring(1, squad.length-1);
+ 	 		if(message.mentions.users.size > 0) squad = message.mentions.users.first().id;
+ 	 		jsonfile.readFile(squadspath, function(err, obj){
+ 	 			if(err) console.log(err);
+ 	 			var listofsquads = Object.keys(obj);
+ 	 			var list = [];
+ 	 			var target = "none";
+ 	 			for(key in listofsquads){
+ 	 				if(obj[listofsquads[key]].name.toLowerCase() === squad.toLowerCase() || obj[listofsquads[key]].tag.toLowerCase() === squad.toLowerCase() || obj[listofsquads[key]].captainId === squad){
+ 	 					target = listofsquads[key];
+ 	 				}
+ 	 			}
+ 	 			if(target === "none") return;
+ 	 			if(obj[target].requirements === 'n/a'){
+ 	 				msgChannel.sendMessage('There are currently no requirements to join `'+obj[target].name+'`');
+ 	 				return;
+ 	 			}
+ 	 			else{
+ 	 				list.push('These are the current set requirements for `'+obj[target].name+'` squad: ');
+ 	 				list.push('```'+obj[target].requirements+'```');
+ 	 				list.push('If you meet these requirements and wish to join, please message <@'+obj[target].captainId+'>');
+ 	 				msgChannel.sendMessage(list);
+ 	 			}
+ 	 		});
+ 	 	}
+ 	 	else if(cmd[1] === 'info'){
+ 	 		var squad = message.content.substring(message.content.indexOf('info')+5);
+ 	 		if(cmd[2].startsWith('"') || cmd[2].startsWith('[') || cmd[2].startsWith("'") || cmd[2].startsWith("<")) squad = squad.substring(1, squad.length-1);
+ 	 		if(message.mentions.users.size > 0) squad = message.mentions.users.first().id; 
+ 	 		jsonfile.readFile(squadspath, function(err, obj){
+ 	 			if(err) console.log(err);
+ 	 			var listofsquads = Object.keys(obj);
+ 	 			var list = [];
+ 	 			var target = "none";
+ 	 			for(key in listofsquads){
+ 	 				if(obj[listofsquads[key]].name.toLowerCase() === squad.toLowerCase() || obj[listofsquads[key]].tag.toLowerCase() === squad.toLowerCase() || obj[listofsquads[key]].captainId === squad){
+ 	 					target = listofsquads[key];
+ 	 				}
+ 	 			}
+ 	 			if(target !== "none"){
+ 	 				list.push('`Showing squad info for...`');
+ 	 				list.push('**Squad Name:**  '+ obj[target].name);
+ 	 				list.push('**Squad Tag:**  ['+obj[target].tag+']');
+ 	 				list.push('**Focus:**  '+obj[target].focus);
+ 	 				var captain_user = message.guild.member(obj[target].captainId);
+					var display_name;
+					if(captain_user.nickname != undefined) display_name = captain_user.nickname;
+					else display_name = captain_user.user.username;
+ 	 				list.push('**Captain:**  '+display_name);
+ 	 				var members = message.guild.members.filter(function(entry){
+ 	 					return entry.roles.exists('name', obj[target].name);
+ 	 				}).array();
+ 	 				list.push('**Members:**  ('+(members.length-1)+')');
+ 	 				for(key in members){
+ 	 					if(members[key].id === obj[target].captainId) continue;
+ 	 					if(members[key].nickname != undefined) list.push('   '+members[key].nickname);
+ 	 					else list.push('   '+members[key].user.username);
+ 	 				}
+ 	 				list.push('**Requirements to join:**  ```'+obj[target].requirements+'```');
+ 	 				msgChannel.sendMessage(list);
+ 	 			}
+ 	 		});
+ 	 	}
+ 	 	else if(cmd[1] === 'drop'){
+ 	 		if(message.mentions.users.size === 0 || !message.guild.member(message.author.id).roles.exists('name', officer_role)){
+ 	 			msgChannel.sendMessage(':warning: You do not have permission to do that.');
+ 	 			return;
+ 	 		}
+ 	 		jsonfile.readFile(squadspath, function(err, obj){
+ 	 			if(err) console.log(err);
+ 	 			var listofsquads = Object.keys(obj);
+ 	 			if(obj.hasOwnProperty(message.author.id)){
+ 	 				var users = message.mentions.users.array();
+ 	 				for(key in users){
+ 	 					let member = message.guild.member(users[key]);
+ 	 					if(member.roles.exists('name', obj[message.author.id].name)){
+ 	 						member.removeRole(message.guild.roles.find('name', obj[message.author.id].name)).then(usr=>{
+ 	 							msgChannel.sendMessage(':white_check_mark: <@'+usr.id+'> was dropped from `'+obj[message.author.id].name+'`.');
+ 	 						});
+ 	 					}
+ 	 					else{
+ 	 						msgChannel.sendMessage(':warning: Could not drop <@'+member.id+'> because user is not a member of your squad.');
+ 	 					}
+ 	 				}
+	 	 		}
+	 	 		else{
+	 	 			msgChannel.sendMessage(':warning: You do not have a squad registered under your name yet.');
+	 	 		}
+ 	 		});	
+ 	 	}
+ 	 	else if(cmd[1] === 'update'){
+ 	 		jsonfile.readFile(squadspath, function(err, obj){
+ 	 			if(err) console.log(err);
+ 	 			var squads = Object.keys(obj);
+ 				for(key in squads){
+ 					obj[squads[key]].requirements = "open";
+ 				}
+ 	 			jsonfile.writeFile(squadspath, obj, function(err){
+ 	 				if(err) console.log(err);
+ 	 				//console.log(obj[cmd[2]].members.length);
+ 	 			});
+ 	 		});
  	 	}
  	 }
 
