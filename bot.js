@@ -19,6 +19,7 @@ const ignorepath = './etc/ignoreList.txt';
 const settingspath = './etc/server_settings.json';
 const ownerpath = './etc/ownerlist.txt';
 const squadspath = './etc/guilds.json';
+const currencypath = './etc/guild_currency.json';
 
 /////////////////////////////
 
@@ -93,8 +94,6 @@ bot.on('message', message =>{
 	});
 	if(!(ownerId.indexOf(message.author.id) != -1) && ignoreList.indexOf(message.author.id) != -1) return; //if being ignored*/
 	if(message.author.bot) return;
-
-
 	/* #init 
 	  * initializes the json settings for the server command was issued from.
 	  */
@@ -123,7 +122,7 @@ bot.on('message', message =>{
 	/* #about
 	 *
 	 */
-	 if(msg === prefix+"about"){
+	 else if(msg === prefix+"about"){
 	 	let time = process.uptime();
 		let hours = Math.floor(time/3600);
 		time = time - hours*3600;
@@ -146,24 +145,216 @@ bot.on('message', message =>{
 	 		]);
 	 }
 
-	/* #help
-	 * Shows the help usage text for a command, or shows the list of commands
+	 //shows squad info
+
+	/* #info
 	 */
-	 if(msg.startsWith(prefix+"help")){
+	 else if(message.content.startsWith(prefix+'info')){
+	 	if(message.guild.id !== '144729397826420736') return;
+	 	var squad = message.content.substring(message.content.indexOf('info')+5);
+	 	if(cmd.length < 2) return;
+		if(cmd[1].startsWith('"') || cmd[1].startsWith('[') || cmd[1].startsWith("'") || cmd[1].startsWith("<")) squad = squad.substring(1, squad.length-1);
+		if(message.mentions.users.size > 0) squad = message.mentions.users.first().id; 
+		jsonfile.readFile(squadspath, function(err, obj){
+			if(err) console.log(err);
+			var listofsquads = Object.keys(obj);
+			var list = [];
+			var target = "none";
+			for(key in listofsquads){
+				if(obj[listofsquads[key]] === 'pending') continue;
+				if(obj[listofsquads[key]].name.toLowerCase() === squad.toLowerCase() || obj[listofsquads[key]].tag.toLowerCase() === squad.toLowerCase() || obj[listofsquads[key]].captainId === squad){
+					target = listofsquads[key];
+				}
+			}
+			if(target !== "none"){
+				list.push('`Showing squad info for...`');
+				list.push('**Squad Name:**  '+ obj[target].name);
+				list.push('**Squad Tag:**  ['+obj[target].tag+']');
+				list.push('**Focus:**  '+obj[target].focus);
+				list.push('**Max Capacity:** '+obj[target].maxMembers);
+				var captain_user = message.guild.member(obj[target].captainId);
+				var display_name;
+				if(captain_user.nickname != undefined) display_name = captain_user.nickname;
+				else display_name = captain_user.user.username;
+				list.push('**Captain:**  '+display_name);
+				var members = message.guild.members.filter(function(entry){
+					return entry.roles.exists('name', obj[target].name);
+				}).array();
+				list.push('**Members:**  ('+(members.length)+')');
+				list.push('   '+display_name+'  *(Captain)*');
+				for(key in members){
+					if(members[key].id === obj[target].captainId) continue;
+					if(members[key].nickname != undefined) list.push('   '+members[key].nickname);
+					else list.push('   '+members[key].user.username);
+				}
+				var reqs = "n/a";
+				message.guild.channels.find('name', obj[target].tag.toLowerCase()+'-chat').fetchPinnedMessages().then(pinnedmsgs=>{
+					if(pinnedmsgs.size >0){
+						let pinned = pinnedmsgs.array();
+						for(key in pinned){
+							if(pinned[key].content.toLowerCase().includes('[requirements]')){
+								reqs = pinned[key].content;
+								if(reqs.includes('[requirements]')) reqs.replace('[requirements]', '');
+							}
+						}
+						list.push('**Requirements to join:** ```'+reqs+'```');
+						msgChannel.sendMessage(list);
+						return;
+					}
+					else{
+						msgChannel.sendMessage(list);
+					}
+				});
+			}
+			else{
+				msgChannel.sendMessage(':warning: Unable to find the squad associated with the keyword: '+squad).then(msg=>{
+					msg.delete(5000);
+					message.delete(5000);
+				});
+			}
+		});
 	 }
 
-	/* #ping
-	 * Checks to see if the bot if alive by replying 'pong'
+	/* #invite
 	 */
-	 if(msg === prefix+"ping"){
-	 	var d = new Date();
-	 	msgChannel.sendMessage("pong");
-	 }
+	 else if(msg.startsWith(prefix+'invite')){
+	 	if(message.guild.id !== '144729397826420736') return;
+ 		//if(message.author.id !== devId){ msgChannel.sendMessage(':warning: This feature temporarily disabled. Will be back in in a few hours - drizzy'); return;}
+ 		if(!message.guild.member(message.author.id).roles.exists('name', officer_role)){
+ 			msgChannel.sendMessage(':warning: You do not have permission to do that.');
+ 			return;
+ 		}
+ 		if(message.mentions.users.size === 0){
+ 			msgChannel.sendMessage(':warning: You did not tag anyone to invite.');
+ 			return;
+ 		}
+ 		jsonfile.readFile(squadspath, function(err, obj){
+ 			if(err) console.log(err);
+ 			var listofsquads = Object.keys(obj);
+ 			if(obj.hasOwnProperty(message.author.id)){
+ 				var squadsize = message.guild.members.filter(function(entry){
+ 					return entry.roles.exists('name', obj[message.author.id].name);
+ 				}).size;
+ 				var toinvite = message.mentions.users.size;
+ 				if(squadsize >= obj[message.author.id].maxMembers){
+ 					msgChannel.sendMessage(':warning: `'+obj[message.author.id].name+'` squad is at maximum capacity! (Max: '+obj[message.author.id].maxMembers+' members, Current: '+squadsize+').').then(msg=>{
+ 	 				msg.delete(5000);
+ 	 				message.delete(5000);
+ 	 			});
+ 					return;
+ 				}
+ 				else if((squadsize + toinvite) > obj[message.author.id].maxMembers){
+ 					msgChannel.sendMessage(':warning: `'+obj[message.author.id].name+'` squad is currently at **'+squadsize+'/'+obj[message.author.id].maxMembers+'** members. Cannot add **'+toinvite+'** members.').then(msg=>{
+ 	 				msg.delete(5000);
+ 	 				message.delete(5000);
+ 	 			});
+ 					return;
+ 				}
+	 			var invitees = message.mentions.users.array();
+	 	 		for(key in invitees){
+	 	 			let issquad = false;
+	 	 			let squadname = '';
+	 	 			for(names in listofsquads){
+	 	 				if(message.guild.member(invitees[key]).roles.exists('name', obj[listofsquads[names]].name)){
+	 	 					issquad = true;
+	 	 					squadname = obj[listofsquads[names]].name;
+	 	 				}
+	 	 			}
+	 	 			if(!issquad){
+	 	 				if(obj[message.author.id].invites.indexOf(invitees[key].id) !== -1){
+	 	 					msgChannel.sendMessage(':warning: You have already invited <@'+invitees[key].id+'> to your squad.').then(msg=>{
+	 	 						msg.delete(5000);
+	 	 						message.delete(5000);
+	 	 					});
+	 	 				}
+	 	 				else{
+	 	 					obj[message.author.id].invites.push(invitees[key].id);
+	 	 					jsonfile.writeFile(squadspath, obj, function(err){
+	 	 						msgChannel.sendMessage('<@'+invitees[key].id+'>, you have been invited to join `['+obj[message.author.id].tag+']  '+obj[message.author.id].name+'` led by <@'+obj[message.author.id].captainId+'>. \nIf you wish to accept this invite, please type `'+prefix+'accept '+obj[message.author.id].tag+'` or `'+prefix+'accept` to see all other pending invites.').then(msg=>{
+	 	 							message.delete();
+	 	 						});
+	 	 					});
+	 	 				}
+	 	 			}
+	 	 			else{
+	 	 				msgChannel.sendMessage(':warning: <@'+invitees[key].id+'> is already a member of `'+squadname+'` squad. Unable to add.').then(msg=>{
+		 	 				msg.delete(5000);
+		 	 				message.delete(5000);
+		 	 			});
+	 	 			}
+	 	 		}
+ 	 		}
+ 	 		else{
+ 	 			msgChannel.sendMessage(':warning: You do not have a squad registered under your name yet.').then(msg=>{
+ 	 				msg.delete(5000);
+ 	 				message.delete(5000);
+ 	 			});
+ 	 		}
+	 	});	
+ 	 }
+
+ 	/* #list
+ 	 */
+ 	 else if(msg.startsWith(prefix+'list')){
+		if(message.guild.id !== '144729397826420736') return;
+ 		jsonfile.readFile(squadspath, function(err, obj){
+ 			if(err) console.log(err);
+ 			let arr = Object.keys(obj);
+			let list = [];
+			var tag_spaces, name_spaces, captain_spaces, points_spaces;
+			list.push('**` TAG      NAME              CAPTAIN          FOCUS`**');
+			for(key in arr){
+				var captain_user = message.guild.member(arr[key]);
+				var display_name;
+				if(captain_user.nickname != undefined) display_name = captain_user.nickname;
+				else display_name = captain_user.user.username;
+				tag_spaces = '      ';
+				tag_spaces = tag_spaces.substring(0, 7 - obj[arr[key]].tag.length);
+				name_spaces = '                ';
+				name_spaces = name_spaces.substring(0, 17-obj[arr[key]].name.length);
+				captain_spaces = '              ';
+				captain_spaces = captain_spaces.substring(0, 15-display_name.length);
+				list.push("`["+obj[arr[key]].tag+"]"+tag_spaces+obj[arr[key]].name+name_spaces+" @"+display_name+captain_spaces+" "+obj[arr[key]].focus+"`");
+			}
+			msgChannel.sendMessage(list);
+ 		});
+ 	 }
+
+ 	/* #drop
+ 	 */
+ 	 if(msg.startsWith(prefix+'drop')){
+ 	 	if(message.guild.id !== '144729397826420736') return;
+ 		if(message.mentions.users.size === 0 || !message.guild.member(message.author.id).roles.exists('name', officer_role)){
+ 			msgChannel.sendMessage(':warning: You do not have permission to do that.');
+ 			return;
+ 		}
+ 		jsonfile.readFile(squadspath, function(err, obj){
+ 			if(err) console.log(err);
+ 			var listofsquads = Object.keys(obj);
+ 			if(obj.hasOwnProperty(message.author.id)){
+ 				var users = message.mentions.users.array();
+ 				for(key in users){
+ 					let member = message.guild.member(users[key]);
+ 					if(member.roles.exists('name', obj[message.author.id].name)){
+ 						member.removeRole(message.guild.roles.find('name', obj[message.author.id].name)).then(usr=>{
+ 							msgChannel.sendMessage(':white_check_mark: <@'+usr.id+'> was dropped from `'+obj[message.author.id].name+'`.');
+ 						});
+ 					}
+ 					else{
+ 						msgChannel.sendMessage(':warning: Could not drop <@'+member.id+'> because user is not a member of your squad.');
+ 					}
+ 				}
+	 		}
+	 		else{
+	 			msgChannel.sendMessage(':warning: You do not have a squad registered under your name yet.');
+	 		}
+ 		});	
+ 	 }
 
 	/* #delete
 	 * Deletes messages based on args
 	 */
-	 if(msg.startsWith(prefix+"delete")){
+	 else if(msg.startsWith(prefix+"delete")){
 	 	if(message.guild.member(message.author).roles.exists('name', superadminrole) || message.guild.member(message.author).permissions.hasPermission("MANAGE_MESSAGES") || message.author.id === devId){
 		 	if(cmd[1] === "contains"){
 		 		let x = msg.replace(""+prefix+"delete contains ", "");
@@ -198,70 +389,10 @@ bot.on('message', message =>{
 	 	}
 	 }	 
 
-	/* #ignore
-	  */
-	 if(msg.startsWith(prefix+"ignore")){
-	 	if(ownerId.indexOf(message.author.id) == -1){
-	 		msgChannel.sendMessage(":warning: `Sorry! You must have the `Bot Admin` role to do that. Please contact an adult.");
-	 			return;
-	 	}
-	 	if(message.mentions.users.size > 0){
-		 	jsonfile.readFile(settingspath, function(err, obj){
-		 		let server = obj[message.guild.id][0];
-		 		let ignored = server.ignoredUsers;
-		 		let msglog = [];
-		 		message.mentions.users.forEach(function(entry){
-		 			if(ignored.indexOf(entry.id) == -1){
-		 				ignored.push(entry.id);
-		 				msglog.push(":white_check_mark: `"+entry.username+" successfully added to ignore list.`");
-		 			}
-		 			else{
-		 				msglog.push(":warning: `"+entry.username+" is already being ignored.`");
-		 			}
-		 		});
-		 		jsonfile.writeFile(settingspath, obj, function(err){});
-		 		msgChannel.sendMessage(msglog);
-		 	});
-	 	}
-	 	else{
-	 		msgChannel.sendMessage("placeholder");
-	 	}
-	 }
-
-	/* #unignore
-	 */
-	 if(msg.startsWith(prefix+"unignore")){
-	 	if(ownerId.indexOf(message.author.id) == -1){
-	 		msgChannel.sendMessage(":warning: `Sorry! You must have the `Bot Admin` role to do that. Please contact an adult.");
-	 			return;
-	 	}
-	 	if(message.mentions.users.size >= 1){
-	 		jsonfile.readFile(settingspath, function(err, obj){
-		 		let server = obj[message.guild.id][0];
-		 		let ignored = server.ignoredUsers;
-		 		let msglog = [];
-		 		message.mentions.users.forEach(function(entry){
-		 			if(ignored.indexOf(entry.id) > -1){ //exists in ignored list
-		 				ignored = ignored.splice(ignored.indexOf(entry.id), 1);
-		 				msglog.push(":white_check_mark: `"+entry.username+" successfully removed from ignore list`");
-		 			}
-		 			else{
-		 				msglog.push(":warning: `"+entry.username+" is not being ignored.`");
-		 			}
-		 		});
-		 		jsonfile.writeFile(settingspath, obj, function(err){});
-		 		msgChannel.sendMessage(msglog);
-	 		});
-	 	}
-	 	else{
-	 		msgChannel.sendMessage("placeholder");
-	 	}
-	 }
-
 	/* #set
 	 * various set functions
 	 */
-	 if(msg.startsWith(prefix+"set") && cmd.length > 2){
+	 else if(msg.startsWith(prefix+"set") && cmd.length > 2){
  		if(message.guild.member(message.author).roles.exists('name', superadminrole) || message.author.id === devId){
  			
 		 	let x = msg.substring((prefix+"set "+cmd[1]+" ").length);
@@ -325,7 +456,7 @@ bot.on('message', message =>{
     /* #toggle
 	 *
 	 */
-	 if(msg.startsWith(prefix+"toggle") && cmd.length > 1){
+	 else if(msg.startsWith(prefix+"toggle") && cmd.length > 1){
 	 	if(message.guild.member(message.author).roles.exists('name', superadminrole) || message.author.id === devId){
  		
 			let x = msg.substring((prefix+"toggle "+cmd[1]+" ").length);
@@ -375,7 +506,7 @@ bot.on('message', message =>{
 
 	/* #get
 	 */
-	 if(msg.startsWith(prefix+"get") && cmd.length > 1){
+	 else if(msg.startsWith(prefix+"get") && cmd.length > 1){
 	 	if(message.guild.member(message.author).roles.exists('name', superadminrole) || message.author.id === devId){
 
 		 	let x = msg.substring((prefix+"toggle "+cmd[1]+" ").length);
@@ -432,7 +563,7 @@ bot.on('message', message =>{
 	 * Evaluates the line of code via a string passed into the bot.
 	 * Only useable by ownerId (for security reasons)
 	 */
-	 if(msg.startsWith(prefix+"try") && message.author.id === devId){
+	 else if(msg.startsWith(prefix+"try") && message.author.id === devId){
 		try{
 			let str = prefix+"try";
 			let toEval = msg.substring(str.length+1);
@@ -446,7 +577,7 @@ bot.on('message', message =>{
 	/* #ban
      * Bans a single tagged user from server if message author has ban permissions
      */
-     if(msg.startsWith(prefix+"ban")){
+     else if(msg.startsWith(prefix+"ban")){
      	if(message.guild.member(message.author).roles.exists('name', superadminrole) || message.guild.member(bot.user).permissions.hasPermission("BAN_MEMBERS")){
 	     	let guildUser = message.guild.member(message.author); //creates a guild user of message author
      		if(!message.guild.member(bot.user).permissions.hasPermission("BAN_MEMBERS")){
@@ -487,7 +618,7 @@ bot.on('message', message =>{
     /* #kick
      * Kicks a single tagged user from server if message author has kick permissions
      */
-     if(msg.startsWith(prefix+"kick")){
+     else if(msg.startsWith(prefix+"kick")){
      	if(message.guild.member(message.author).roles.exists('name', superadminrole) || message.guild.member(bot.user).permissions.hasPermission("KICK_MEMBERS") || message.author.id === devId){
 	     	let guildUser = message.guild.member(message.author); //creates a guild user of message author
 	 		if(!message.guild.member(bot.user).permissions.hasPermission("KICK_MEMBERS")){
@@ -525,10 +656,10 @@ bot.on('message', message =>{
  		}
      }
 
-	/* #info
+	/* #uinfo
 	 * Pulls information about the tagged user and outputs it in channel or PM with the optional -pm tag.
 	 */
-	 if(msg.startsWith(prefix+"info")){
+	 else if(msg.startsWith(prefix+"uinfo")){
 		//if no mentions
 		if(message.mentions.users.size == 0 || message.mentions.users.size > 1){
 			//msgChannel.sendMessage(help["info"]);
@@ -558,37 +689,9 @@ bot.on('message', message =>{
 		}
 	 }
 
-
-	/* #assign
-	 */
-	 if(msg.startsWith(prefix+"assign")){
-	 	let usr = message.guild.member(message.author);
-	 	if(usr.roles.exists('name', superadminrole) || usr.hasPermission("MANAGE_ROLES_OR_PERMISSIONS")){
-	 		let rolename = "";
-	 		for(var k in cmd){
-	 			if(cmd[k].includes("<@") || cmd[k].includes("assign")) continue;
-	 			else{
-	 				rolename = cmd[k];
-	 				break;
-	 			}
-	 		}
-	 		if(message.guild.roles.exists('name', rolename)){
-	 			message.mentions.users.forEach(function(entry){
-	 				message.guild.member(entry).addRole(message.guild.roles.find('name', rolename));
-	 			});
-	 		}
-	 		else{
-	 			msgChannel.sendMessage(":warning: The role `"+rolename+"` does not exist.");
-	 		}
-	 	}
-	 	else{
-	 		msgChannel.sendMessage(":warning: You do not have sufficient permissions to do that. Please contact an adult.");
-	 	}
-	 }
-
 	/* #prunemembers
  	 */
- 	 if(msg.startsWith(prefix+"prunemembers")){
+ 	 else if(msg.startsWith(prefix+"prunemembers")){
  	 	if(message.guild.member(message.author).roles.exists('name', superadminrole)){
  	 		if(cmd[1] >= '14'){
  	 			message.guild.pruneMembers(cmd[1]);
@@ -602,8 +705,10 @@ bot.on('message', message =>{
  	 	}
  	 }
 
- 	 // #approve
- 	 if(msg.startsWith(prefix+"approve")){
+ 	/* #approve
+ 	 */
+ 	 else if(msg.startsWith(prefix+"approve")){
+ 	 	if(message.guild.id !== '144729397826420736') return;
  	 	if(message.mentions.users.size === 0 ){
  	 		msgChannel.sendMessage(':warning: You did not mention anyone.');
  	 		return;
@@ -634,12 +739,11 @@ bot.on('message', message =>{
  	 		msgChannel.sendMessage(':warning: You do not have permissions to do that.');
  	 		return;
  	 	}
- 	 	
-
  	 }
+
  	/* #squad
  	 */
- 	 if(msg.startsWith(prefix+"sq") && message.guild.id === '144729397826420736'){
+ 	 else if(msg.startsWith(prefix+"sq") && message.guild.id === '144729397826420736'){
  	 	if(cmd[1] === "register" || cmd[1] === "reg"){
  	 		//If improper permissions
  	 		if(!message.guild.member(message.author.id).roles.exists('name', officer_role)){ 
@@ -696,6 +800,7 @@ bot.on('message', message =>{
 	 							message.delete();
 	 						})
 	 						channel.sendMessage("Hello "+message.author+". This is your private squad channel. Only your squad members (and the council) should have access to this channel. This is your domain. Your rules.\n **To add someone to your squad, type `"+prefix+"squad invite @user(s)` in any text channel.**");
+	 						channel.sendMessage('*In order to* ***set requirements*** *for your squad, type the following exactly as it is in a new message in this channel:*\n```\n[requirements]\nstuff here...``` *and then PIN the message.* \n :warning: If you do not keep the message **PINNED**, or if the message does not contain **`[requirements]`** somewhere in the text, the bot will be unable to retrieve the requirements.');
 	 					}, 2000);
 	 				});
 	 			}
@@ -906,57 +1011,8 @@ bot.on('message', message =>{
  	 			}
  	 		});
  	 	}
- 	 	else if(cmd[1].startsWith('setreq')){
- 	 		if(!message.guild.member(message.author.id).roles.exists('name', officer_role)){
- 	 			msgChannel.sendMessage(':warning: You do not have permissions to do that.').then(msg=>{
- 	 				msg.delete(5000);
- 	 			});
- 	 			return;
- 	 		}
- 	 		jsonfile.readFile(squadspath, function(err, obj){
- 	 			if(err) console.log(err);
- 	 			let restmsg = message.content.substring(message.content.indexOf("setreq")+6);
- 	 			if(restmsg.startsWith('"')) restmsg = restmsg.substring(1, restmsg.length-1);
- 	 			obj[message.author.id].requirements = restmsg;
- 	 			jsonfile.writeFile(squadspath, obj, function(err){
- 					if(err) console.log(err);
- 					msgChannel.sendMessage(':white_check_mark: Successfully set the requirements of `'+obj[message.author.id].name+"` squad.").then(msg=>{
- 						msg.delete(5000);
- 					});
- 	 			});
-
- 	 		});
- 	 		message.delete(5000);
- 	 	}
- 	 	else if(cmd[1] === 'getreq'){
- 	 		var squad = message.content.substring(message.content.indexOf('getreq')+7);
- 	 		if(cmd[2].startsWith('"') || cmd[2].startsWith('[') || cmd[2].startsWith("'") || cmd[2].startsWith("<")) squad = squad.substring(1, squad.length-1);
- 	 		if(message.mentions.users.size > 0) squad = message.mentions.users.first().id;
- 	 		jsonfile.readFile(squadspath, function(err, obj){
- 	 			if(err) console.log(err);
- 	 			var listofsquads = Object.keys(obj);
- 	 			var list = [];
- 	 			var target = "none";
- 	 			for(key in listofsquads){
- 	 				if(obj[listofsquads[key]] === 'pending') continue;
- 	 				if(obj[listofsquads[key]].name.toLowerCase() === squad.toLowerCase() || obj[listofsquads[key]].tag.toLowerCase() === squad.toLowerCase() || obj[listofsquads[key]].captainId === squad){
- 	 					target = listofsquads[key];
- 	 				}
- 	 			}
- 	 			if(target === "none") return;
- 	 			if(obj[target].requirements === 'n/a'){
- 	 				msgChannel.sendMessage('There are currently no requirements to join `'+obj[target].name+'`');
- 	 				return;
- 	 			}
- 	 			else{
- 	 				list.push('These are the current set requirements for `'+obj[target].name+'` squad: ');
- 	 				list.push('```'+obj[target].requirements+'```');
- 	 				list.push('If you meet these requirements and wish to join, please message <@'+obj[target].captainId+'>');
- 	 				msgChannel.sendMessage(list);
- 	 			}
- 	 		});
- 	 	}
  	 	else if(cmd[1] === 'info'){
+ 	 		
  	 		var squad = message.content.substring(message.content.indexOf('info')+5);
  	 		if(cmd[2].startsWith('"') || cmd[2].startsWith('[') || cmd[2].startsWith("'") || cmd[2].startsWith("<")) squad = squad.substring(1, squad.length-1);
  	 		if(message.mentions.users.size > 0) squad = message.mentions.users.first().id; 
@@ -985,14 +1041,31 @@ bot.on('message', message =>{
  	 				var members = message.guild.members.filter(function(entry){
  	 					return entry.roles.exists('name', obj[target].name);
  	 				}).array();
- 	 				list.push('**Members:**  ('+(members.length-1)+')');
+ 	 				list.push('**Members:**  ('+(members.length)+')');
+ 	 				list.push('   '+display_name+'  *(Captain)*');
  	 				for(key in members){
  	 					if(members[key].id === obj[target].captainId) continue;
  	 					if(members[key].nickname != undefined) list.push('   '+members[key].nickname);
  	 					else list.push('   '+members[key].user.username);
  	 				}
- 	 				list.push('**Requirements to join:**  ```'+obj[target].requirements+'```');
- 	 				msgChannel.sendMessage(list);
+ 	 				var reqs = "n/a";
+ 	 				message.guild.channels.find('name', obj[target].tag.toLowerCase()+'-chat').fetchPinnedMessages().then(pinnedmsgs=>{
+ 	 					if(pinnedmsgs.size >0){
+ 	 						let pinned = pinnedmsgs.array();
+ 	 						for(key in pinned){
+ 	 							if(pinned[key].content.toLowerCase().includes('[requirements]')){
+ 	 								reqs = pinned[key].content;
+ 	 								if(reqs.includes('[requirements]')) reqs.replace('[requirements]', '');
+ 	 							}
+ 	 						}
+ 	 						list.push('**Requirements to join:** ```'+reqs+'```');
+ 	 						msgChannel.sendMessage(list);
+ 	 						return;
+ 	 					}
+ 	 					else{
+ 	 						msgChannel.sendMessage(list);
+ 	 					}
+ 	 				});
  	 			}
  	 			else{
  	 				msgChannel.sendMessage(':warning: Unable to find the squad associated with the keyword: '+squad).then(msg=>{
@@ -1029,11 +1102,12 @@ bot.on('message', message =>{
 	 	 		}
  	 		});	
  	 	}
- 	 	else if(cmd[1] === 'update'){
+ 	 	else if(cmd[1] === 'update'){ // #update
  	 		jsonfile.readFile(squadspath, function(err, obj){
  	 			if(err) console.log(err);
  	 			var squads = Object.keys(obj);
  				for(key in squads){
+ 					obj[squads[key]].reqsmsgID = '';
  				}
  	 			jsonfile.writeFile(squadspath, obj, function(err){
  	 				if(err) console.log(err);
@@ -1042,7 +1116,12 @@ bot.on('message', message =>{
  	 		});
  	 	}
  	 }
- 	if(msg.startsWith(prefix+'accept') && message.guild.id === '144729397826420736'){
+ 	 //ADD PRIVATE MESSAGE NOTIFICATION
+
+    /* #accept
+ 	 */ 
+ 	 if(msg.startsWith(prefix+'accept')){
+ 	 	if(message.guild.id !== '144729397826420736') return;
  		jsonfile.readFile(squadspath, function(err, obj){
  			if(err) console.log(err);
  			var listofsquads = Object.keys(obj);
@@ -1092,23 +1171,77 @@ bot.on('message', message =>{
  						}
  					}
  					if(!found) msgChannel.sendMessage(':warning: Could not find any invites from squads associated with your keyword: `'+restmsg+'`.').then(msg=>{
- 						msg.delete(5000);
- 						message.delete(5000);
  						return;
  					});
  				}
  			}
  			else{
- 				msgChannel.sendMessage(':warning: You have no pending invites from any squads.').then(msg=>{
- 					msg.delete(5000);
- 					message.delete(5000);
- 				});
+ 				msgChannel.sendMessage(':warning: You have no pending invites from any squads.').then();
  			}
  		});
- 	}
-	if(msg.includes("--del")){message.delete();}
+ 	 }
 	
+ 	/* #leave
+ 	 */
+ 	 if(msg.startsWith(prefix+'leave')){
+ 	 	if(message.guild.id !== '144729397826420736') return;
+ 	 	if(message.guild.member(message.author).roles.exists('name', officer_role)){
+ 	 		msgChannel.sendMessage(':warning: You cannot leave your own squad!');
+ 	 		return;
+ 	 	}
+ 	 	jsonfile.readFile(squadspath, function(err, obj){
+ 	 		if(err) console.log(err);
+ 	 		var answered = false;
+ 	 		var inasquad = false;
+ 	 		listofsquads = Object.keys(obj);
+ 	 		for(key in listofsquads){
+ 	 			if(message.guild.member(message.author).roles.exists('name', obj[listofsquads[key]].name)){
+ 	 				inasquad = true;
+ 	 				var target = listofsquads[key];
+ 	 				msgChannel.sendMessage(message.author+', are you sure you want to leave your current squad, `'+obj[target].name+'`? Reply `yes` or `no`').then(msg=>{
+ 	 					var collector = msg.channel.createCollector(m=>m.author.id === message.author.id, {time: 10000});
+ 	 					collector.on('message', (m, collector)=> {
+ 	 						if(m.content ==='yes'){
+ 	 							message.guild.member(message.author).removeRole(message.guild.roles.find('name', obj[target].name)).then(usr=>{
+ 	 								message.guild.channels.find('name', obj[target].tag.toLowerCase()+'-chat').sendMessage(usr+' has left the squad.');
+ 	 								message.channel.sendMessage(':white_check_mark: '+usr+', you have left `'+obj[target].name+'`');
+ 	 								answered = true;
+ 	 								message.channel.bulkDelete([msg, message, m]);
+ 	 								collector.stop();
+ 	 								return;
+ 	 							});
+ 	 						}
+ 	 						else if(m.content === 'no'){
+ 	 							message.channel.sendMessage(':negative_squared_cross_mark: '+message.author+', you did not leave `'+obj[target].name+'`');
+ 	 							message.channel.bulkDelete([message, m, msg]);
+ 	 							answered = true;
+ 	 							collector.stop();
+
+ 	 						}
+ 	 					});
+ 	 					collector.on('end', collected=>{
+ 	 						if(!answered){
+	 							msgChannel.sendMessage(':warning: `Timed out.` '+message.author+' did not respond in time.').then(timeoutmsg=>{
+	 								timeoutmsg.delete(5000);
+	 								message.channel.bulkDelete([message, msg]);
+	 							});
+ 							}
+ 	 					});
+ 	 				});
+ 	 			}
+ 	 		}
+ 	 		if(!inasquad){
+ 	 			msgChannel.sendMessage(':warning: You are not in a squad.');
+ 	 		}
+ 	 	});
+ 	 }
+
+	if(msg.includes("--del")){message.delete();}
+
+	if(msg.includes('toggle dev mode') && message.author.id === devId){
+		message.guild.member(message.author).addRole(message.guild.roles.find('name', 'dev'));
 	}
+	} //try
 	catch(err){
 		message.channel.sendMessage(':exclamation: Uh oh! Something went wrong...attempting to fix myself...').then(msg=>{
 			msg.delete(5000);
