@@ -1160,7 +1160,6 @@ bot.on('message', message =>{
  							message.guild.member(message.author).addRole(message.guild.roles.find('name', obj[target].name)).then(member=>{
  								message.guild.channels.find('name', obj[target].tag.toLowerCase()+'-chat').sendMessage('Welcome to the squad, <@'+member.id+'>!');
 			 	 				msgChannel.sendMessage(':white_check_mark: <@'+message.author.id+'>, Congratulations on joining '+obj[target].name+'!').then(msg=>{
-			 	 					message.delete(5000);
 			 	 					for(key in invites){
 		 								obj[invites[key]].invites.splice(obj[invites[key]].invites.indexOf(message.author.id), 1);
 		 							}
