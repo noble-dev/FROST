@@ -1,1 +1,57 @@
-{"142418227929153536":{"name":"Styx","tag":"Styx","captainId":"142418227929153536","points":0,"focus":"PvP,Training,Gearing","requirements":" 15 hours+ PvP training weekly.\nIn Discord with good listening skills and able to take orders when needed.\nAble to express their opinion in a non-agressive way.\nUnderstanding of their class and how its played","invites":["133352797776248832"],"maxMembers":20},"134074800132980737":{"name":"Joker","tag":"Joker","captainId":"134074800132980737","points":0,"focus":"Elitist/Dueling/Arena","requirements":"n/a","invites":[],"maxMembers":20},"150370069208236032":{"name":"Petty Bitches","tag":"Petty","captainId":"150370069208236032","members":[],"points":0,"focus":"PVP/Gearing/Drama","requirements":"  Be the pettiest person and create a lot of drama. 18+ only!\nAND PARTICIPATION IN THE COMPLIMENT CIRCLE IS REQUIRED","invites":["201655650420260864"],"maxMembers":20},"133352797776248832":{"name":"Freaks n Geeks","tag":"FnG","captainId":"133352797776248832","points":0,"focus":"Arenas and Anime","requirements":"\n1. have pvp achievs in arenas/structured pvp in other games and prove it\n2. rem > emilia\n3. saber > tohsaka rin \n4. mumen rider > all","invites":["144335221783920640"],"maxMembers":20}}
+{
+  "142418227929153536":{
+    "name":"Styx",
+    "tag":"Styx",
+    "maxMembers":20,
+    "captainId":"142418227929153536",
+    "about":"undefined",
+    "focus":"PvP,Training,Gearing",
+    "requirements":"15 hours+ PvP training weekly (after gearing)\nIn Discord with good listening skills and able to take orders when needed.\nAble to express their opinion in a non-agressive way.\nUnderstanding of their class and how its played",
+    "achievements":"n/a",
+    "invites":[]
+  },
+  "134074800132980737": {
+    "name":"Shrek",
+    "tag":"Shrek",
+    "maxMembers":20,
+    "captainId":"134074800132980737",
+    "about":"undefined",
+    "focus":"Elitist/Dueling/Arena",
+    "requirements":"Must be fully devoted to leveling and gearing at the start of the game and save pvp until end game. Failure to meet the gear and level requirements for every week or two will be purged from the squad.",
+    "achievements":"n/a",
+    "invites":[]
+  },
+  "150370069208236032":{
+    "name":"Petty Bitches",
+    "tag":"Petty",
+    "maxMembers":25,
+    "captainId":"150370069208236032",
+    "about":"undefined",
+    "focus":"PVP/Gearing/Drama",
+    "requirements":"Must be competent at PVP and following directions.\nMust be petty and love to start drama.\nMust also love their Captain Laine! ❤",
+    "achievements":"n/a",
+    "invites":[]
+  },
+  "133352797776248832":{
+    "name":"Loli eSports",
+    "tag":"Loli",
+    "maxMembers":15,
+    "captainId":"133352797776248832",
+    "about":"undefined",
+    "focus":"Arenas/Rankings Climb",
+    "requirements":"1. have pvp achievs in arenas/structured pvp in other games and prove it via screenshot, armory, etc.\n2. rem > emilia\n3. lolis",
+    "achievements":"n/a",
+    "invites":[]
+  },
+  "125814023349469184":{
+    "name":"Redbeards",
+    "tag":"red",
+    "maxMembers":20,
+    "captainId":"125814023349469184",
+    "about":"undefined",
+    "focus":"Pvp Elitists Dueling Gods",
+    "requirements":"5 hours + pvp training and 5 Squad battlegrounds/ week",
+    "achievements":"n/a",
+    "invites":[]
+  }
+}
