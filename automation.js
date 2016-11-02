@@ -468,7 +468,7 @@ bot.on('message', message=>{
 				message.channel.sendMessage(':white_check_mark: Successfully set the logchannel to '+message.mentions.channels.first()+' and logging is currently **'+mi_settings.logchannelstatus+'**');
 			}
 		}
-		else if(cmd[1] === 'focus'){
+		else if(cmd[1] === 'about'){
 			if(!message.guild.member(message.author).roles.exists('name', officer_role)){
 				message.channel.sendMessage(':warning: You do not have permissions to do this.').then(msg=>{
 					setTimeout(function(){ message.channel.bulkDelete([message, msg]); }, 7000);
@@ -481,14 +481,8 @@ bot.on('message', message=>{
 				});
 				return;
 			}
-			if(txt.length > 25){
-				message.channel.sendMessage(':warning: Your focus must be 25 characters or less.').then(msg=>{
-					setTimeout(function(){ message.channel.bulkDelete([message, msg]); }, 7000);
-				});
-				return;
-			}
-			squads[message.author.id].focus = txt;
-			message.channel.sendMessage(':white_check_mark: Set the focus for `'+squads[message.author.id].name+'` to ```'+squads[message.author.id].focus+'```').then(msg=>{
+			squads[message.author.id].about = txt;
+			message.channel.sendMessage(':white_check_mark: Set the about for `'+squads[message.author.id].name+'` to ```'+squads[message.author.id].about+'```').then(msg=>{
 				setTimeout(function(){ message.channel.bulkDelete([message, msg]); }, 10000);
 			});
 			refresh('squads');
