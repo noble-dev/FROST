@@ -10,7 +10,7 @@ const bot = new Discord.Client();
 const token = 'MjI1MzQ1NjYxNTkwMDQ0Njcy.CrntFw.jHDKx9Mj2ExBa6twSz7lywTu2-o';
 const devId = "133352797776248832"; // dev's id
 const maliciousId = '144729397826420736';
-const prefix = '~';
+const prefix = '!';
 const officer_role = 'Captain';
 const admin_role = 'Council';
 const member_role = 'Member';
@@ -642,8 +642,44 @@ bot.on('message', message=>{
 	// #help
 	if(cmd[0].toLowerCase() === 'help'){
 		let usr = message.author;
-		if(cmd.length === 1){
-			usr.sendMessage('help');
+		let admin = [
+			'**ADMIN COMMANDS**',
+			'`'+prefix+'set [greetmsg|greetpm|byepm|greetmsgchannel|logchannel|defaultrole] [text]',
+			'`       Sets the first parameter to the second parameter.`',
+			'`'+prefix+'toggle [greetmsg|greetpm|byepm|defaultrole|logchannel]',
+			'`       Toggles the first parameter`',
+			'`'+prefix+'get [greetmsg|greetpm|byepm|defaultrole|logchannel|]',
+			'`       Displays what the first parameter is set to and its status`',
+			'`'+prefix+'approve @user',
+			'`       Approves the tagged guest user to member status within guild`',
+			'`'+prefix+'delete [tag|name|@captain]',
+			'`       Deletes the squad and all related info in database`'
+		]
+		let management = [
+			'**SQUAD MANAGEMENT COMMANDS**',
+			'`'+prefix+'register <tag> <name>`\n       Registers your squad with the specified tag and name.',
+			'`'+prefix+'set about <text>`\n       Sets your squad about section.',
+			'`'+prefix+'set reqs <text>`\n       Sets your squad requirements',
+			'`'+prefix+'drop @user`\n       Drops the tagged user from your squad',
+			'`'+prefix+'invite @user`\n       Invites the tagged user to your squad',
+			'`'+prefix+'approve @user`\n       Approves the tagged guest to member status in guild'
+		];
+		let general = [
+			'**GENERAL USE COMMANDS**',
+			'`'+prefix+'about`\n       Shows basic information about this bot',
+			'`'+prefix+'list`\n       Lists out the squad index',
+			'`'+prefix+'info [tag|name|@captain]`\n       Shows info for squad associated with keyword',
+			'`'+prefix+'uinfo @user`\n       Shows the information for the tagged user',
+			'*More coming soon...*'
+		];
+		if(message.guild.member(usr).roles.exists('name', admin_role)){
+			usr.sendMessage(admin.concat(general));
+		}
+		else if(message.guild.member(usr).roles.exists('name', officer_role)){
+			usr.sendMessage(management.concat(general));
+		}
+		else{
+			usr.sendMessage(general);
 		}
 	}
 
