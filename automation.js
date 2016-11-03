@@ -512,6 +512,7 @@ bot.on('message', message=>{
 			});
 			refresh('squads');
 		}
+		refresh('settings');
 		return;
 	} //end set //done //done
 
@@ -574,7 +575,7 @@ bot.on('message', message=>{
 		else{
 			message.channel.sendMessage(':warning: Unrecognized keyword: `'+cmd[1]+'`');
 		}
-		refresh('malicious_settings');
+		refresh('settings');
 	} //end toggle //done
 
 	// #uinfo
@@ -699,22 +700,22 @@ bot.on('message', message=>{
 // #guildMemberAdd
 // Checks to see whether guild has logging set and then greets/logs new member
 bot.on('guildMemberAdd', (member)=>{
-	if(settings.greetmsgstatus === 'enabled' && member.guild.channels.exists('name', settings.greetmsgchannel)){
-		let greet = settings.greetmsg;
+	if(mi_settings.greetmsgstatus === 'enabled' && member.guild.channels.exists('name', mi_settings.greetmsgchannel)){
+		let greet = mi_settings.greetmsg;
 		if(greet.includes('@user')) greet = greet.replace('@user', ''+member);
-		member.guild.channels.find('name', settings.greetmsgchannel).sendMessage(greet);
+		member.guild.channels.find('name', mi_settings.greetmsgchannel).sendMessage(greet);
 	}
-	if(settings.greetpmstatus === 'enabled'){
-		let greet = settings.greetpm;
+	if(mi_settings.greetpmstatus === 'enabled'){
+		let greet = mi_settings.greetpm;
 		if(greet.includes('@user')) greet = greet.replace('@user', ''+member.user.username);
 		member.sendMessage(greet);
 	}
-	if(settings.defaultrolestatus === 'enabled' && member.guild.roles.exists('name', settings.defaultrole)){
-		let role = member.guild.roles.find('name', settings.defaultrole);
+	if(mi_settings.defaultrolestatus === 'enabled' && member.guild.roles.exists('name', mi_settings.defaultrole)){
+		let role = member.guild.roles.find('name', mi_settings.defaultrole);
 		member.addRole(role);
 	}
-	if(settings.logchannelstatus === 'enabled' && member.guild.channels.exists('name', settings.logchannel)){
-		member.guild.channels.find('name', settings.logchannel).sendMessage(':white_check_mark: '+member+' ('+member.user.username+'#'+member.user.discriminator+') has joined the server.');
+	if(mi_settings.logchannelstatus === 'enabled' && member.guild.channels.exists('name', mi_settings.logchannel)){
+		member.guild.channels.find('name', mi_settings.logchannel).sendMessage(':white_check_mark: '+member+' ('+member.user.username+'#'+member.user.discriminator+') has joined the server.');
 	}
 }); //end of guildMemberAdd
 
@@ -724,7 +725,7 @@ bot.on('guildMemberRemove', (member)=>{
 	if(mi_settings.logchannelstatus === 'enabled' && member.guild.channels.exists('name', mi_settings.logchannel)){
 		member.guild.channels.find('name', mi_settings.logchannel).sendMessage(':x: '+member+' ('+member.user.username+'#'+member.user.discriminator+') has left the server.');
 	}
-	if(settings.byepmstatus === 'enabled'){
+	if(mi_settings.byepmstatus === 'enabled'){
 		let byepm = mi_settings.byepm;
 		if(byepm.includes('@user')) byepm = byepm.replace('@user', ''+member.user.username);
 		member.sendMessage(byepm);
