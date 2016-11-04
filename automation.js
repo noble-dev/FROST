@@ -289,12 +289,12 @@ bot.on('message', message=>{
 			});
 			return;
 		}
-		if(Date.now() - message.guild.member(usr).joinedAt.getTime() < 86400000){
+		/*if(Date.now() - message.guild.member(usr).joinedAt.getTime() < 86400000){
 			message.channel.sendMessage(':warning: New users must have been on this server for at least 24 hours before being eligible to join a squad.').then(msg=>{
 				setTimeout(function(){ message.channel.bulkDelete([message, msg]); }, 7000);
 			});
 			return;
-		}
+		}*/
 		let sqs = Object.keys(squads);
 		for(key in sqs){
 			if(message.guild.member(usr).roles.exists('name', squads[sqs[key]].name)){
@@ -426,12 +426,12 @@ bot.on('message', message=>{
 		let txt = message.content.substring(cmd[0].length + cmd[1].length + prefix.length + 2);
 		if(cmd[1] === 'greetpm'){
 			mi_settings.greetpm = txt;
-			refresh('malicious_settings');
+			refresh('settings');
 			message.channel.sendMessage(':white_check_mark: Successfully set the greet PM to ```'+txt+'``` and it is currently **'+mi_settings.greetpmstatus+'**');
 		}
 		else if(cmd[1] === 'greetmsg'){
 			mi_settings.greetmsg = txt;
-			refresh('malicious_settings');
+			refresh('settings');
 			message.channel.sendMessage(':white_check_mark: Successfully set the greet msg to ```'+txt+'``` and it is currently **'+mi_settings.greetmsgstatus+'** on the channel **'+mi_settings.greetmsgchannel+'**');
 		}
 		else if(cmd[1] === 'greetmsgchannel'){
@@ -448,7 +448,7 @@ bot.on('message', message=>{
 		}
 		else if(cmd[1] === 'byepm'){
 			mi_settings.byepm = txt;
-			refresh('malicious_settings');
+			refresh('settings');
 			message.channel.sendMessage(':white_check_mark: Successfully set the greet msg to ```'+txt+'``` and it is currently **'+mi_settings.byepmstatus+'**');
 		}
 		else if(cmd[1] === 'defaultrole'){
@@ -457,7 +457,7 @@ bot.on('message', message=>{
 			}
 			else{
 				mi_settings.defaultrole = txt;
-				refresh('malicious_settings');
+				refresh('settings');
 				message.channel.sendMessage(':white_check_mark: Successfully set the default role to `'+txt+'` and it is currently **'+mi_settings.defaultrolestatus+'**');
 			}
 		}
@@ -469,7 +469,7 @@ bot.on('message', message=>{
 					return;
 				}
 				mi_settings.logchannel = message.mentions.channels.first().name;
-				refresh('malicious_settings');
+				refresh('settings');
 				message.channel.sendMessage(':white_check_mark: Successfully set the logchannel to '+message.mentions.channels.first()+' and logging is currently **'+mi_settings.logchannelstatus+'**');
 			}
 		}
@@ -512,7 +512,6 @@ bot.on('message', message=>{
 			});
 			refresh('squads');
 		}
-		refresh('settings');
 		return;
 	} //end set //done //done
 
