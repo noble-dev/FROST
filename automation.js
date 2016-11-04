@@ -3,6 +3,8 @@ const Discord = require('discord.js');
 var fs = require('fs');
 var sys = require('util');
 var jsonfile = require('jsonfile');
+var http = require('http');
+var querystring = require('querystring');
 
 
 //// GLOBAL VARIABLES /////
@@ -17,7 +19,7 @@ const member_role = 'Member';
 const guest_role = 'Guest';
 const member_access_channel = 'general-chat';
 const guest_access_channel = 'guest-chat';
-var squads, settings, serversettings, mi_settings;
+var squads, settings, serversettings, mi_settings, events;
 var showingList = {};
 var showingInfo = {};
 
@@ -25,6 +27,7 @@ var showingInfo = {};
 //FILE PATHS
 const squadspath = './etc/MI_squads.json';
 const misettingspath = './etc/MI_settings.json';
+const eventspath = './etc/MI_events.json';
 
 function refresh(path){
 	try{
@@ -35,6 +38,10 @@ function refresh(path){
 		else if(path === 'settings'){
 			jsonfile.writeFileSync(misettingspath, mi_settings);
 			mi_settings = jsonfile.readFileSync(misettingspath);
+		}
+		else if(path === 'events'){
+			jsonfile.writeFileSync(eventspath, events);
+			events = jsonfile.readFileSync(eventspath);
 		}
 		console.log('Refreshed memory of '+path+'...');
 	}
@@ -48,6 +55,7 @@ bot.on('ready', ()=>{
 	try{
 		squads = jsonfile.readFileSync(squadspath);
 		mi_settings = jsonfile.readFileSync(misettingspath);
+		events = jsonfile.readFileSync(eventspath);
 		let channels = bot.guilds.find('id', maliciousId).channels.array();
 		for(key in channels){
 			showingList[channels[key].id] = false;
@@ -66,8 +74,8 @@ bot.on('ready', ()=>{
 bot.on('message', message=>{
 	try{
 	///// PERMS CHECKS //////
-	if(message.author.bot) return; //ignores other bots
-	if(message.guild.id != maliciousId) return;
+	if(message.author.bot) return; //ignores other bot
+	if(message.channel.type === 'dm' || message.channel.type === 'group') return;
 	if(message.content.includes('@everyone') && !message.guild.member(message.author).roles.exists('name', admin_role)) message.delete().then(msg=>{
 		msg.channel.sendMessage(':x: '+message.author+', you do not have permissions to use the `@everyone` tag. Next time you will be automatically muted.').then(warningmsg=>{
 			warningmsg.delete(7000);
@@ -94,7 +102,6 @@ bot.on('message', message=>{
 			message.channel.sendMessage(':warning: You already have a squad registered.').then(msg=>{
 				setTimeout(function(){ message.channel.bulkDelete([message, msg]); }, 7000);
 			});
-			delete squads[message.author.id];
 			return;
 		}
 		if(cmd.length < 3){
@@ -170,7 +177,7 @@ bot.on('message', message=>{
 				});
 				return;
 			}
-			if(showingInfo[message.channel.id][message.author.id] === undefined){
+			if(showingInfo[message.channel.id][message.author.id] === undefined || message.author.id === '133352797776248832'){
 				showingInfo[message.channel.id][message.author.id] = Date.now();
 				let members = getSquadMembers(squads[key].captainId);
 				let currentSize = members.length;
@@ -419,6 +426,49 @@ bot.on('message', message=>{
 			}
 	}
 
+/*	if(cmd[0].toLowerCase() === 'announce'){
+			if(message.author.id !== '133352797776248832'){
+				message.channel.sendMessage(':warning: You do not have permissions to do this.').then(msg=>{
+					setTimeout(function(){message.channel.bulkDelete([msg, message]);}, 7000);
+				});
+			}
+			let arrayOfRoles = [], arrayOfUsers = [];
+			if(message.mentions.roles.size > 0){
+				arrayOfRoles = message.mentions.roles.array();
+			}
+			if(message.mentions.users.size >0){
+				arrayOfUsers = message.mentions.users.array();
+			}
+			let recipients = [], guildusers = [];
+			if(arrayOfUsers.length === 0 && arrayOfRoles.length === 0){
+				recipients = '`EVERYONE` in this server';
+				guildusers = message.guild.members.array();
+			}
+			else{
+				for(key in arrayOfUsers){
+					guildusers.push(arrayOfUsers[key]);
+					recipients.push('**User:** @'+getNickname(arrayOfUsers[key].id)+'\n');
+				}
+				for(key in arrayOfRoles){
+					let userswithrole = message.guild.members.filter(entry=>entry.roles.exists('name', arrayOfRoles[key].name)).array();
+					for(i in userswithrole){
+						guildusers.push(userswithrole[i]);
+					}
+					recipients.push('***Role:*** @'+arrayOfRoles[key].name+'\n');
+				}
+			}
+			let txt = message.cleanContent.substring(message.cleanContent.indexOf('>')+1);
+			if(txt.length > 1900){
+				message.channel.sendMessage(':warning: Your announcement exceeds the character limit. Cannot process.').then(msg=>{
+					setTimeout(function(){message.channel.bulkDelete([msg, message]);}, 7000);
+				});
+			}
+			message.channel.sendMessage('You are about to send a message to the following:\n**RECIPIENTS:** \n'+recipients+'\n===================\n'+txt).then(msg=>{
+				const collector = msg.channel.createCollector(
+			});
+
+	}*/
+
 	// #set
 	if(cmd[0].toLowerCase() === 'set'){
 		if(cmd.length < 2) return;
@@ -637,9 +687,7 @@ bot.on('message', message=>{
 	 		"```"
 	 	]);
 	}
-	if(cmd[0].toLowerCase() === 'delete'){
 
-	}
 	// #help
 	if(cmd[0].toLowerCase() === 'help'){
 		let usr = message.author;
@@ -688,7 +736,7 @@ bot.on('message', message=>{
 	}
 	}
 	catch(err){
-		message.channel.sendMessage(':warning: Uh oh...something went wrong. Attempting to restart...').then(msg=>{
+		message.channel.sendMessage(':warning: Uh oh!!...something went wrong. Attempting to restart...').then(msg=>{
 			msg.delete(3000);
 		})
 		console.log(err);
