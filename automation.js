@@ -12,7 +12,7 @@ const bot = new Discord.Client();
 const token = 'MjI1MzQ1NjYxNTkwMDQ0Njcy.CrntFw.jHDKx9Mj2ExBa6twSz7lywTu2-o';
 const devId = "133352797776248832"; // dev's id
 const maliciousId = '144729397826420736';
-const prefix = '!';
+const prefix = '~';
 const officer_role = 'Captain';
 const admin_role = 'Council';
 const member_role = 'Member';
@@ -76,11 +76,6 @@ bot.on('message', message=>{
 	///// PERMS CHECKS //////
 	if(message.author.bot) return; //ignores other bot
 	if(message.channel.type === 'dm' || message.channel.type === 'group') return;
-	if(message.content.includes('@everyone') && !message.guild.member(message.author).roles.exists('name', admin_role)) message.delete().then(msg=>{
-		msg.channel.sendMessage(':x: '+message.author+', you do not have permissions to use the `@everyone` tag. Next time you will be automatically muted.').then(warningmsg=>{
-			warningmsg.delete(7000);
-		});
-	});
 	if(message.content[0] !== prefix) return; //ignores if doesn't start with prefix
 	/////////////////////////
 
@@ -561,6 +556,18 @@ bot.on('message', message=>{
 				setTimeout(function(){ message.channel.bulkDelete([message, msg]); }, 10000);
 			});
 			refresh('squads');
+		}
+		else if(cmd[1].startsWith('squadname')){
+			if(message.author.id != devId){
+				message.channel.sendMessage(':warning: You do not have permissions to do this. Please contact @dev').then(msg=>{
+					setTimeout(function(){ message.channel.bulkDelete([message, msg]); }, 10000);
+				});
+			}
+			else{
+				let newTag = cmd[2];
+				let newName = cmd[3];
+
+			}
 		}
 		return;
 	} //end set //done //done
