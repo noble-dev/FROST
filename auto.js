@@ -43,55 +43,58 @@ bot.on('message', message=>{
 	}
 	// #delete
 	if(cmd[0].toLowerCase() === 'delete'){
-		let target_user = null;
-		let lim = 100;
-		if(!message.guild.member(message.author).hasPermission('MANAGE_MESSAGES')){
-			message.channel.sendMessage(':warning: You do not have permissions to do that!').then(msg=>{
-				bulkDelete(message.channel, [msg, message], 5000);
-			});
-			return;
-		}
-		if(message.mentions.users.size > 0) target_user = message.mentions.users.first();
-		if(cmd[1] === 'contains'){
-			if(!message.content.includes('"')){
-				message.channel.sendMessage(':warning: Improper usage of `'+prefix+'delete contains`, please type `'+prefix+'help delete` for usage information.').then(msg=>{
-					bulkDelete(message.channel, [msg, message], 10000);
-				});
-				return;
+		try{
+			let target_user = null;
+			let lim = 100;
+			if(!message.guild.member(message.author).hasPermission('MANAGE_MESSAGES')){
+				throw('You do not have permissions to delete messages.');
 			}
-			let str = message.content.substring(message.content.indexOf('"')+1, message.content.lastIndexOf('"'));
-			message.channel.fetchMessages({limit: lim}).then(msgs=>{
-				if(target_user !== null){
-					message.channel.bulkDelete(msgs.filter(entry => entry.author.id === target_user.id && entry.content.includes(str)));
+			if(message.mentions.users.size > 0) target_user = message.mentions.users.first();
+			if(cmd[1] === 'contains'){
+				if((message.content.match(/"/g)||[]).length !== 2){
+					throw('Improper usage of quotation marks.');
 				}
-				else{
-					message.channel.bulkDelete(msgs.filter(entry => entry.content.includes(str)));
-				}
-			});
-		}
-		else{
-				if(/^\d+$/.test(cmd[1])){
-					lim = parseInt(cmd[1]) + 1;
-					message.channel.fetchMessages({limit: lim}).then(msgs=>{
-						if(target_user !== null){
+				let str = message.content.substring(message.content.indexOf('"')+1, message.content.lastIndexOf('"'));
+				message.channel.fetchMessages({limit: lim}).then(msgs=>{
+					if(target_user !== null){
+						message.channel.bulkDelete(msgs.filter(entry => entry.author.id === target_user.id && entry.content.includes(str)));
+						message.delete(3000);
+					}
+					else{
+						message.channel.bulkDelete(msgs.filter(entry => entry.content.includes(str)));
+						message.delete(3000);
+					}
+				});
+			}
+			else{
+					if(/^\d+$/.test(cmd[1])){
+						lim = parseInt(cmd[1]) + 1;
+						message.channel.fetchMessages({limit: lim}).then(msgs=>{
+							if(target_user !== null){
+								message.channel.bulkDelete(msgs.filter(entry => entry.author.id === target_user.id));
+							}
+							else{
+								message.channel.bulkDelete(msgs);
+							}
+						});
+					}
+					else if(target_user !== null){
+						message.channel.fetchMessages({limit: lim}).then(msgs=>{
 							message.channel.bulkDelete(msgs.filter(entry => entry.author.id === target_user.id));
-						}
-						else{
-							message.channel.bulkDelete(msgs);
-						}
-					});
+						});
+					}
+					else{
+						message.channel.sendMessage(':warning: Improper usage of `'+prefix+'delete ...`, please type `'+prefix+'help delete` for usage information.').then(msg=>{
+							bulkDelete(message.channel, [msg, message], 10000);
+						});
+					}
 				}
-				else if(target_user !== null){
-					message.channel.fetchMessages({limit: lim}).then(msgs=>{
-						message.channel.bulkDelete(msgs.filter(entry => entry.author.id === target_user.id));
-					});
-				}
-				else{
-					message.channel.sendMessage(':warning: Improper usage of `'+prefix+'delete ...`, please type `'+prefix+'help delete` for usage information.').then(msg=>{
-						bulkDelete(message.channel, [msg, message], 10000);
-					});
-				}
-		}
+			}
+			catch(err){
+				message.channel.sendMessage(':warning: '+message.author+', '+err+'\nType `'+prefix+'help delete` for usage information.').then(msg=>{
+					bulkDelete(message.channel, [message, msg], 7000);
+				});
+			}
 
 
 	}
@@ -195,7 +198,9 @@ bot.on('message', message=>{
 						return;
 					}
 					settings[guild.id].greetmsgchannel = message.mentions.channels.first().name;
-					message.channel.sendMessage(':white_check_mark: Successfully set the **greet message channel** to '+message.mentions.channels.first());
+					message.channel.sendMessage(':white_check_mark: Successfully set the **greet message channel** to '+message.mentions.channels.first()).then(msg=>{
+						bulkDelete(message.channel, [message, msg], 7000);
+					});
 				}
 				else if(cmd[2].toLowerCase() === 'greetpm'){
 					if((message.content.match(/"/g)||[]).length !== 2){
@@ -244,7 +249,9 @@ bot.on('message', message=>{
 						return;
 					}
 					settings[guild.id].byemsgchannel = message.mentions.channels.first().name;
-					message.channel.sendMessage(':white_check_mark: Successfully set the **bye message channel** to '+message.mentions.channels.first());
+					message.channel.sendMessage(':white_check_mark: Successfully set the **bye message channel** to '+message.mentions.channels.first()).then(msg=>{
+						bulkDelete(message.channel, [message, msg], 5000);
+					});
 				}
 				else if(cmd[2].toLowerCase() === 'logchannel'){
 					if(message.mentions.channels.size === 0){
@@ -463,6 +470,43 @@ bot.on('message', message=>{
 	}
 	// #kick
 	if(cmd[0].toLowerCase() === 'kick'){
+		try{
+			if(!message.guild.member(bot.user).hasPermission('KICK_MEMBERS')){
+				throw('This bot does not have the `KICK_MEMBERS` permissions.');
+			}
+			if(!message.guild.member(message.author).hasPermission('KICK_MEMBERS')){
+				throw('You do not have `KICK_MEMBERS` permission.');
+			}
+			if(message.mentions.users.size !== 1){
+				throw('You must mention one user to kick.');
+			}
+			let reason = null;
+			if((message.content.match(/"/g)||[]).length === 1 || (message.content.match(/"/g)||[]).length > 2){
+				throw('Imporper quotation mark usage. Could not understand.');
+			}
+			if((message.content.match(/"/g)||[]).length === 2){
+				reason = message.content.substring(message.content.indexOf('"')+1, message.content.lastIndexOf('"'));
+			}
+			message.guild.fetchMember(message.mentions.users.first()).then(member=>{
+				member.kick();
+				if(reason !== null){
+					m.sendMessage('You were kicked from **'+message.guild.name+'** by '+getDisplayName(message.guild, message.author)+' for the following reason: ```'+reason+'```');
+					if(settings[message.guild.id].logstatus === 'enabled' && message.guild.channels.exists('name', settings[message.guild.id].logchannel)){
+						message.guild.channels.find('name', settings[message.guild.id].logchannel).sendMessage(':x: `'+getDisplayName(message.guild, m.user)+'` was **`KICKED`** from the server by `'+getDisplayName(message.guild, message.author)+' for the following reason: ```'+reason+'```');
+					}
+				}
+				message.channel.sendMessage(':white_check_mark: `'+getDisplayName(message.guild, m.user)+'` was kicked from the server.').then(msg=>{
+					message.delete();
+					msg.delete(7000);
+				});
+			});
+		}
+		catch(err){
+			message.channel.sendMessage(':warning: '+message.author+', '+err+'\nType `'+prefix+'help kick` for usage information.').then(msg=>{
+				bulkDelete(message.channel, [message, msg], 7000);
+			});
+			console.log(err);
+		}
 
 	}
 	// #ban
@@ -617,6 +661,7 @@ bot.on('guildCreate', (guild)=>{
 		jsonfile.writeFile(servers, obj, function(err){
 			if(err) console.log(err);
 		});
+		refresh();
 	});
 });
 // #guildMemberAdd

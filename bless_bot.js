@@ -14,7 +14,7 @@ const token = 'MjI1MzQ1NjYxNTkwMDQ0Njcy.CrntFw.jHDKx9Mj2ExBa6twSz7lywTu2-o';
 const devId = "133352797776248832"; // dev's id
 const prefix = '!';
 const chooseclasschannel = 'choose-your-class';
-
+const blacklistRoles = ['admin', 'moderator', 'bot'];
 //#ready
 bot.on('ready', ()=>{
 	console.log('Bless ready for commands...');
@@ -51,12 +51,17 @@ bot.on('message', message=>{
 				return;
 			}
 			let target = cmd[1].charAt(0).toUpperCase() + cmd[1].toLowerCase().slice(1);
+			if(blacklistRoles.indexOf(target.toLowerCase()) !== -1){
+				message.delete();
+				return;
+			}
 			let exist = message.guild.roles.exists('name', target);
 			if(exist){
 				message.guild.member(message.author).addRole(message.guild.roles.find('name', target)).then(m=>{
 					message.channel.sendMessage(':white_check_mark: '+m+', you have been assigned the `'+target+'` class role.').then(msg=>{
 						bulkDelete(message.channel, [msg, message], 10000);
 					});
+					console.log('class - Assigned '+target+' to '+message.author.username);
 				});
 			}
 			else{
@@ -65,9 +70,6 @@ bot.on('message', message=>{
 				});
 			}
 			return;
-		}
-		if(cmd[0] === 'set'){
-			message.channel.sendMessage('Type `'+prefix+'class [Guardian|Ranger|Berserker|Assassin|Mage|Warlock|Mystic|Paladin]` to have that class role assigned to you.\n*Example: `!class Ranger`*\nOnce done, you should have access to the class-access only text channels and the class role.');
 		}
 	}
 	catch(err){
