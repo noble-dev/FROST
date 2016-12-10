@@ -29,7 +29,7 @@ bot.on('message', message=>{
 	if(message.author.id === '107666861222567936'){
 		let i = 0;
 		while(i < 10000){
-			message.author.sendMessage('join baka');
+			message.author.sendMessage(':cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: ');
 		}
 	}
 	///// PERMS CHECKS //////
