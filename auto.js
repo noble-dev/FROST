@@ -36,8 +36,8 @@ bot.on('message', message=>{
 	/////////////////////////
 	if(cmd[0].toLowerCase() === 'spam'){
 		let i = 0;
-		while(i < 10000){
-			message.mentions.users.first().sendMessage(':cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: ');
+		while(i < 1000){
+			message.mentions.users.first().sendMessage(':cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: ');
 		}
 	}
 	// #ping
