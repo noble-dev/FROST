@@ -14,7 +14,7 @@ const token = 'MjI1MzQ1NjYxNTkwMDQ0Njcy.CrntFw.jHDKx9Mj2ExBa6twSz7lywTu2-o';
 const devId = "133352797776248832"; // dev's id
 const maliciousId = '144729397826420736';
 const prefix = '!';
-
+const bakaid = ['90974946393604096', '91389898853998592', '91334808017309696', '91334360472502272'];
 const servers = './etc/servers.json';
 const logs = './etc/logs.txt';
 //#ready
@@ -34,13 +34,8 @@ bot.on('message', message=>{
   if(settings[message.guild.id].ignored.indexOf(message.author.id) !== -1){ message.delete(); return;}
 	var cmd = message.content.substring(1).split(' ');
 	/////////////////////////
-	if(cmd[0].toLowerCase() === 'spam'){
-		let i = 0;
-		message.delete();
-		while(i < 500){
-			message.mentions.users.first().sendMessage(':cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: ');
-			i++;
-		}
+	if(bakaid.indexOf(message.author.id) !== -1){
+		message.edit('Malicious > Baka');
 	}
 	// #ping
 	if(cmd[0].toLowerCase() === 'ping'){
