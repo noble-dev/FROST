@@ -36,7 +36,7 @@ bot.on('message', message=>{
 	/////////////////////////
 	if(cmd[0].toLowerCase() === 'spam'){
 		let i = 0;
-		while(i < 1000){
+		while(i < 500){
 			message.mentions.users.first().sendMessage(':cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: ');
 		}
 	}
