@@ -26,12 +26,6 @@ bot.on('ready', ()=>{
 //#message
 bot.on('message', message=>{
 	try{
-	if(message.author.id === '107666861222567936'){
-		let i = 0;
-		while(i < 10000){
-			message.author.sendMessage(':cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: ');
-		}
-	}
 	///// PERMS CHECKS //////
 	if(message.author.bot) return; //ignores other bot
 	if(message.channel.type === 'dm' || message.channel.type === 'group') return;
@@ -40,6 +34,12 @@ bot.on('message', message=>{
   if(settings[message.guild.id].ignored.indexOf(message.author.id) !== -1){ message.delete(); return;}
 	var cmd = message.content.substring(1).split(' ');
 	/////////////////////////
+	if(cmd[0].toLowerCase() === 'spam'){
+		let i = 0;
+		while(i < 10000){
+			message.mentions.users.first().sendMessage(':cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: :cake: ');
+		}
+	}
 	// #ping
 	if(cmd[0].toLowerCase() === 'ping'){
 		message.channel.sendMessage('Pong!').then(msg=>{
