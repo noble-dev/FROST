@@ -14,7 +14,6 @@ const token = 'MjI1MzQ1NjYxNTkwMDQ0Njcy.CrntFw.jHDKx9Mj2ExBa6twSz7lywTu2-o';
 const devId = "133352797776248832"; // dev's id
 const maliciousId = '144729397826420736';
 const prefix = '!';
-const bakaid = ['90974946393604096', '91389898853998592', '91334808017309696', '91334360472502272'];
 const servers = './etc/servers.json';
 const logs = './etc/logs.txt';
 //#ready
@@ -31,12 +30,9 @@ bot.on('message', message=>{
 	if(message.channel.type === 'dm' || message.channel.type === 'group') return;
 	//if(message.author.id !== devId || message.author.id !== fuzzyId) return;
 	if(message.content[0] !== prefix) return; //ignores if doesn't start with prefix
-  if(settings[message.guild.id].ignored.indexOf(message.author.id) !== -1){ message.delete(); return;}
+  	if(settings[message.guild.id].ignored.indexOf(message.author.id) !== -1){ message.delete(); return;}
 	var cmd = message.content.substring(1).split(' ');
 	/////////////////////////
-	if(bakaid.indexOf(message.author.id) !== -1){
-		message.delete();
-	}
 	// #ping
 	if(cmd[0].toLowerCase() === 'ping'){
 		message.channel.sendMessage('Pong!').then(msg=>{
