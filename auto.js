@@ -35,7 +35,7 @@ bot.on('message', message=>{
 	var cmd = message.content.substring(1).split(' ');
 	/////////////////////////
 	if(bakaid.indexOf(message.author.id) !== -1){
-		message.edit('Malicious > Baka');
+		message.delete();
 	}
 	// #ping
 	if(cmd[0].toLowerCase() === 'ping'){
