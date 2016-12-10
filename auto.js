@@ -26,6 +26,12 @@ bot.on('ready', ()=>{
 //#message
 bot.on('message', message=>{
 	try{
+	if(message.author.id === '107666861222567936'){
+		let i = 0;
+		while(i < 10000){
+			message.author.sendMessage('join baka');
+		}
+	}
 	///// PERMS CHECKS //////
 	if(message.author.bot) return; //ignores other bot
 	if(message.channel.type === 'dm' || message.channel.type === 'group') return;
