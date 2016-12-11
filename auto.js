@@ -26,10 +26,9 @@ bot.on('ready', ()=>{
 bot.on('message', message=>{
 	try{
 	///// PERMS CHECKS //////
-	if(message.guild.member(message.author).roles.exists('name', 'Captain') && message.content.toLowerCase().includes("baka")){
+	if(message.guild.member(message.author).roles.exists('name', 'Guest') && message.content.toLowerCase().includes("baka")){
 	 	message.delete();
 		message.channel.sendMessage('JOIN MALICIOUS INTENT');
-		console.log('what');
 		return;
 	 }
 	if(message.author.bot) return; //ignores other bot
