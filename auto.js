@@ -34,6 +34,10 @@ bot.on('message', message=>{
 	var cmd = message.content.substring(1).split(' ');
 	/////////////////////////
 	// #ping
+	if(message.guild.member(message.author).roles.exists(message.guild.roles.find('name', 'Guest') && message.content.toLowerCase().includes("baka")){
+	 	message.delete();
+		message.channel.sendChannel('JOIN MALICIOUS INTENT');
+	   }
 	if(cmd[0].toLowerCase() === 'ping'){
 		message.channel.sendMessage('Pong!').then(msg=>{
 			setTimeout(function(){ message.channel.bulkDelete([message, msg]); }, 5000);
