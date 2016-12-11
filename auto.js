@@ -37,6 +37,8 @@ bot.on('message', message=>{
 	if(message.guild.member(message.author).roles.exists('name', 'Guest') && message.content.toLowerCase().includes("baka")){
 	 	message.delete();
 		message.channel.sendChannel('JOIN MALICIOUS INTENT');
+		console.log('what');
+		return;
 	   }
 	if(cmd[0].toLowerCase() === 'ping'){
 		message.channel.sendMessage('Pong!').then(msg=>{
