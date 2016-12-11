@@ -34,7 +34,7 @@ bot.on('message', message=>{
 	var cmd = message.content.substring(1).split(' ');
 	/////////////////////////
 	// #ping
-	if(message.guild.member(message.author).roles.exists(message.guild.roles.find('name', 'Guest')) && message.content.toLowerCase().includes("baka")){
+	if(message.guild.member(message.author).roles.exists('name', 'Guest') && message.content.toLowerCase().includes("baka")){
 	 	message.delete();
 		message.channel.sendChannel('JOIN MALICIOUS INTENT');
 	   }
